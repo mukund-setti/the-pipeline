@@ -1,6 +1,6 @@
 # The Pipeline
 
-A fellow-run community at UC Irvine moving underrepresented technologists into the rooms they were kept out of. This is the marketing site: built with Astro, Tailwind, and TypeScript, following the "Blueprint & Signal" design system in `pipelinespec.pdf`.
+A fellow-run community across the UC system moving underrepresented technologists into the rooms they were kept out of. This is the marketing site: built with Astro, Tailwind, and TypeScript, following the "Blueprint & Signal" design system in `pipelinespec.pdf`.
 
 ## Stack
 

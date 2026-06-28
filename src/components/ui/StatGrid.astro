@@ -8,10 +8,15 @@ interface Props {
 }
 const { stats = defaultStats, class: className = '' } = Astro.props;
 // gap-px over a black backdrop draws hairline dividers at any column count.
+// Desktop column count follows the stat count (literal classes so Tailwind's
+// JIT keeps them); medium and small breakpoints stay fixed.
+const colsClass =
+  ({ 3: 'grid-cols-3', 4: 'grid-cols-4', 5: 'grid-cols-5' } as const)[stats.length] ?? 'grid-cols-4';
 ---
 <div
   class:list={[
-    'grid grid-cols-4 gap-px overflow-hidden border-2 border-line bg-line max-[860px]:grid-cols-2 max-[560px]:grid-cols-1',
+    'grid gap-px overflow-hidden border-2 border-line bg-line max-[860px]:grid-cols-2 max-[560px]:grid-cols-1',
+    colsClass,
     className,
   ]}
 >

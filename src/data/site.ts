@@ -11,12 +11,12 @@ export const site = {
   name: 'The Pipeline',
   /** Used as the homepage <title> suffix and brand wordmark. */
   title: 'The Pipeline',
-  location: 'UC Irvine',
+  location: 'University of California',
   established: '2026',
   themeColor: '#111111', // keep in sync with ink.DEFAULT in tailwind.config.ts (a <meta> needs a literal)
   /** Default meta description (homepage + OG fallback). */
   description:
-    'A fellow-run community at UC Irvine moving underrepresented undergrads in tech into the rooms they were kept out of, through gatekept job drops, resume reviews, and mock interviews run by people who have already landed.',
+    'A fellow-run community across the UC system moving underrepresented undergrads in tech into the rooms they were kept out of, through gatekept job drops, resume reviews, and mock interviews run by people who have already landed.',
   ogDescription:
     'The talent was never the problem. We hand gatekept access to the people who have been locked out of it.',
 } as const;
@@ -32,7 +32,7 @@ export const navCta = { label: 'Join', href: '/join/' } as const;
 
 /** Home hero strings. Undergrad identity up top, a success proof point below. */
 export const hero = {
-  eyebrow: 'UC Irvine · Undergrad fellowship · Est. 2026',
+  eyebrow: 'UC system · Undergrad fellowship · Est. 2026',
   proof: '65% of fellows land an internship',
 } as const;
 
@@ -45,7 +45,7 @@ export const hero = {
  */
 export const links = {
   form: 'https://forms.gle/REPLACE-WITH-FORM', // TODO: real interest form
-  contact: 'mailto:REPLACE@uci.edu', // TODO: real contact (email or LinkedIn)
+  contact: 'mailto:REPLACE@pipelineco.org', // TODO: real contact (email or LinkedIn)
 } as const;
 
 export type Placement = {
@@ -75,6 +75,7 @@ export type Stat = { num: string; cap: string; win?: boolean };
 
 export const stats: Stat[] = [
   { num: '50+', cap: 'Undergrad fellows' },
+  { num: '5+', cap: 'Universities' },
   { num: '65%', cap: 'Landed an internship', win: true },
   { num: '$0', cap: 'To join' },
   { num: '100%', cap: 'Fellow-led' },
@@ -164,8 +165,8 @@ export const faq: FaqItem[] = [
     a: 'Nothing. The Pipeline is free, and that is not changing. Removing barriers is the entire point.',
   },
   {
-    q: 'Do I have to go to UC Irvine?',
-    a: 'The Pipeline started at UC Irvine and is becoming an official UCI student org this fall, so UCI students are the core of the community.',
+    q: 'Which schools can join?',
+    a: 'The Pipeline runs across the University of California system. If you have a UC email, you can verify and get in. We started at UC Irvine and have grown to fellows across UC campuses.',
   },
   {
     q: 'How much time does it take?',
@@ -177,7 +178,7 @@ export const faq: FaqItem[] = [
 export const aboutStory: string[] = [
   'The talent has always been here. Brilliant, qualified, hungry people: first-gen students, people without the right connections, people who were never handed the map. What is missing is not ability. It is <b>access</b>: the referral that gets your resume read, the posting that goes out before it is public, the person who will tell you what the interview is actually like.',
   'That access has always existed. It just circulated quietly, among people who already had it. The Pipeline takes it and hands it to the people who have been locked out, then gives them the coaching and the community to use it well.',
-  'We started as a Discord where one person shared the gatekept postings they had fought to find. It grew into a community of <b>50+ fellows</b> reviewing each other\'s resumes, running each other\'s mock interviews, and landing real offers. The name is the thesis: they called us the pipeline problem. <b>We decided to be the pipeline.</b>',
+  'We started as a Discord at UC Irvine where one person shared the gatekept postings they had fought to find. It grew into a community of <b>50+ fellows across UC campuses</b> reviewing each other\'s resumes, running each other\'s mock interviews, and landing real offers. The name is the thesis: they called us the pipeline problem. <b>We decided to be the pipeline.</b>',
 ];
 
 /** "What makes us different" checklist. HTML strings (bold allowed). */
@@ -224,6 +225,6 @@ export const voice = {
 } as const;
 
 export const footer = {
-  builtBy: 'Built and run by fellows · UC Irvine',
+  builtBy: 'Built and run by fellows · Across the UC system',
   copyright: '© 2026 The Pipeline',
 } as const;
