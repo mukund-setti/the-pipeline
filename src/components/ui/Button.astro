@@ -1,0 +1,40 @@
+---
+/**
+ * Sharp brutalist button. primary = ink fill / ghost = 2px black border /
+ * ghostDark = on ink. Renders an <a> when `href` is set, else a <button>.
+ */
+interface Props {
+  href?: string;
+  variant?: 'primary' | 'ghost' | 'ghostDark';
+  arrow?: boolean;
+  external?: boolean;
+  type?: 'button' | 'submit';
+  class?: string;
+  'aria-current'?: 'page' | undefined;
+}
+
+const {
+  href,
+  variant = 'primary',
+  arrow = false,
+  external = false,
+  type = 'button',
+  class: className = '',
+  ...rest
+} = Astro.props;
+
+const base =
+  'lift-sm group inline-flex items-center justify-center gap-2.5 border-2 px-6 py-3.5 font-sans text-base font-semibold';
+const variants = {
+  primary: 'border-transparent bg-brand text-white hover:bg-brand-deep',
+  ghost: 'border-line bg-transparent text-ink hover:bg-brand-soft',
+  ghostDark: 'border-white/25 bg-transparent text-white hover:border-white/60',
+};
+const cls = [base, variants[variant], className].join(' ');
+const extra = external ? { target: '_blank', rel: 'noopener' } : {};
+const Tag = href ? 'a' : 'button';
+---
+<Tag class={cls} {...(href ? { href } : { type })} {...extra} {...rest}>
+  <slot />
+  {arrow && <span class="nudge" aria-hidden="true">→</span>}
+</Tag>

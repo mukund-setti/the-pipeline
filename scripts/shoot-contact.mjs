@@ -1,0 +1,10 @@
+import puppeteer from 'puppeteer-core';
+const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox','--allow-file-access-from-files'] });
+const page = await browser.newPage();
+await page.setViewport({ width: 1240, height: 1200, deviceScaleFactor: 1 });
+await page.goto('file:///C:/Users/mukun/the-pipeline/LovableUI/contact.html', { waitUntil: 'networkidle0', timeout: 30000 });
+await new Promise(r=>setTimeout(r,500));
+await page.screenshot({ path: 'scripts/_shots/lovable-contact.png', fullPage: true });
+await browser.close();
+console.log('done');

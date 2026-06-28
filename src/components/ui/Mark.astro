@@ -1,0 +1,56 @@
+---
+/**
+ * The Pipeline logo: an industrial intake-to-signal pipe. Intake flange at the
+ * base, ink current rising through the stem, an elbow out to a red signal
+ * starburst (the landed offer). Brand asset, so literal colors are sanctioned.
+ */
+interface Props {
+  size?: number;
+  class?: string;
+}
+const { size = 32, class: className = '' } = Astro.props;
+---
+<span
+  class:list={['inline-grid flex-none place-items-center bg-ink', className]}
+  style={`width:${size}px;height:${size}px`}
+  aria-hidden="true"
+>
+  <svg viewBox="0 0 36 36" class="h-full w-full" xmlns="http://www.w3.org/2000/svg">
+    <!-- Intake flange -->
+    <rect x="6" y="26" width="10" height="5" fill="#F5F3EE"></rect>
+    <rect x="7" y="27" width="8" height="3" fill="#111"></rect>
+    <circle cx="7.5" cy="28.5" r="0.5" fill="#F5F3EE"></circle>
+    <circle cx="14.5" cy="28.5" r="0.5" fill="#F5F3EE"></circle>
+    <circle cx="7.5" cy="26.5" r="0.5" fill="#F5F3EE"></circle>
+    <circle cx="14.5" cy="26.5" r="0.5" fill="#F5F3EE"></circle>
+    <!-- Vertical pipe stem -->
+    <rect x="9" y="5" width="4" height="21" fill="#F5F3EE"></rect>
+    <rect x="10" y="5" width="2" height="21" fill="#111"></rect>
+    <!-- Weld ridges -->
+    <line x1="9" y1="10" x2="13" y2="10" stroke="#999" stroke-width="0.4"></line>
+    <line x1="9" y1="16" x2="13" y2="16" stroke="#999" stroke-width="0.4"></line>
+    <line x1="9" y1="22" x2="13" y2="22" stroke="#999" stroke-width="0.4"></line>
+    <!-- Inner flow -->
+    <path d="M 11 7 L 11 23" stroke="#FF2A2A" stroke-width="1" stroke-linecap="round" stroke-dasharray="2 3"></path>
+    <circle cx="11.5" cy="11" r="0.4" fill="#FF2A2A"></circle>
+    <circle cx="10.5" cy="17" r="0.35" fill="#FF2A2A"></circle>
+    <circle cx="11.3" cy="21" r="0.45" fill="#FF2A2A"></circle>
+    <!-- Horizontal outlet pipe -->
+    <rect x="12" y="15" width="9" height="4" fill="#F5F3EE"></rect>
+    <rect x="12.5" y="16" width="7.5" height="2" fill="#111"></rect>
+    <!-- Elbow joint -->
+    <path d="M 11 14 L 13 14 L 13 16 L 15 16" fill="none" stroke="#F5F3EE" stroke-width="4" stroke-linejoin="miter"></path>
+    <path d="M 11 15 L 12 15 L 12 16.5 L 14 16.5" fill="none" stroke="#111" stroke-width="2" stroke-linejoin="miter"></path>
+    <line x1="12" y1="17" x2="21" y2="17" stroke="#999" stroke-width="0.4"></line>
+    <!-- Chevron -->
+    <path d="M 16 16.5 L 19.5 17.5 L 16 18.5" fill="none" stroke="#FF2A2A" stroke-width="1.2" stroke-linejoin="miter" stroke-linecap="square"></path>
+    <!-- Signal starburst -->
+    <polygon points="25,14 26.5,16.5 29,17 26.5,17.5 25,20 23.5,17.5 21,17 23.5,16.5" fill="#FF2A2A"></polygon>
+    <polygon points="25,15.5 25.8,16.8 27,17 25.8,17.2 25,18.5 24.2,17.2 23,17 24.2,16.8" fill="#111"></polygon>
+    <!-- Signal rays -->
+    <line x1="27.5" y1="13.5" x2="29" y2="12" stroke="#FF2A2A" stroke-width="0.8" stroke-linecap="square"></line>
+    <line x1="29" y1="16" x2="31.5" y2="15.5" stroke="#FF2A2A" stroke-width="0.8" stroke-linecap="square"></line>
+    <line x1="29" y1="19" x2="31.5" y2="20" stroke="#FF2A2A" stroke-width="0.8" stroke-linecap="square"></line>
+    <line x1="27.5" y1="21.5" x2="29" y2="23" stroke="#FF2A2A" stroke-width="0.8" stroke-linecap="square"></line>
+  </svg>
+</span>

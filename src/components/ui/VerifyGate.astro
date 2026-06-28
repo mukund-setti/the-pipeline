@@ -1,0 +1,316 @@
+---
+/**
+ * University verification gate (progressive enhancement, no framework).
+ * The "choose" form is static HTML, so it paints instantly and works as far as
+ * showing the options with zero JS. A small script wires up Supabase auth
+ * (loaded lazily, only on interaction or an OAuth return), then swaps between
+ * the prebuilt state sections. The Discord invite is fetched from the gated
+ * server endpoint and is never in this bundle.
+ */
+interface Props {
+  formUrl?: string;
+}
+const { formUrl } = Astro.props;
+
+const PRIMARY =
+  'inline-flex w-full items-center justify-center gap-2.5 border-2 border-transparent bg-brand px-6 py-3.5 font-sans text-base font-semibold text-white transition-colors hover:bg-brand-deep';
+const GHOST =
+  'inline-flex w-full items-center justify-center gap-2.5 border-2 border-line bg-transparent px-6 py-3.5 font-sans text-base font-semibold text-ink transition-colors hover:bg-brand-soft';
+const INPUT =
+  'w-full border-2 border-line bg-bg px-4 py-3 font-sans text-base text-ink outline-none transition-colors placeholder:text-ink-soft/60 focus:border-ink';
+const LABEL = 'mb-1.5 block font-mono text-[0.7rem] uppercase tracking-[0.1em] text-ink-soft';
+const SUBLINK = 'font-mono text-[0.72rem] uppercase tracking-[0.08em]';
+---
+<div data-vg-root class="max-w-[440px]">
+  {/* choose */}
+  <section data-vg="choose">
+    <button type="button" class={PRIMARY} data-vg-google>
+      <svg class="h-[18px] w-[18px]" viewBox="0 0 48 48" aria-hidden="true">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+      </svg>
+      Continue with your university Google
+    </button>
+
+    <div class="my-5 flex items-center gap-3 font-mono text-[0.68rem] uppercase tracking-[0.14em] text-ink-soft">
+      <span class="h-px flex-1 bg-line"></span>or<span class="h-px flex-1 bg-line"></span>
+    </div>
+
+    <form data-vg-email-form novalidate>
+      <label class={LABEL} for="vg-email">University email</label>
+      <input id="vg-email" class={INPUT} type="email" inputmode="email" autocomplete="email" required placeholder="you@uci.edu" />
+      <button type="submit" class={`${GHOST} mt-3`}>Email me a code</button>
+    </form>
+
+    <p class="mt-4 font-mono text-[0.72rem] leading-relaxed text-ink-soft">
+      Open to UC students for now. We only ever use your email to send the code.
+    </p>
+  </section>
+
+  {/* codeSent */}
+  <section data-vg="codeSent" hidden>
+    <p class="mb-1 text-ink">
+      We sent a 6-digit code to <span class="font-semibold" data-vg-email></span>.
+    </p>
+    <p class="mb-5 text-[0.95rem] text-ink-soft">Enter it below to verify and get in.</p>
+    <form data-vg-code-form>
+      <label class={LABEL} for="vg-code">Verification code</label>
+      <input id="vg-code" class={`${INPUT} font-mono tracking-[0.4em]`} inputmode="numeric" autocomplete="one-time-code" maxlength="6" required placeholder="000000" />
+      <button type="submit" class={`${PRIMARY} mt-3`}>Verify and get in</button>
+    </form>
+    <div class="mt-4 flex flex-wrap gap-x-5 gap-y-1">
+      <button type="button" class={`${SUBLINK} text-ink underline-offset-4 hover:underline`} data-vg-resend>Resend code</button>
+      <button type="button" class={`${SUBLINK} text-ink-soft hover:text-ink`} data-vg-reset>Use a different email</button>
+    </div>
+  </section>
+
+  {/* busy */}
+  <section data-vg="busy" hidden>
+    <div class="flex items-center gap-3 py-2 text-ink-soft" aria-live="polite">
+      <span class="h-4 w-4 animate-spin rounded-full border-2 border-ink/20 border-t-signal"></span>
+      <span class="font-mono text-[0.8rem] uppercase tracking-[0.1em]" data-vg-busy>Working</span>
+    </div>
+  </section>
+
+  {/* verified */}
+  <section data-vg="verified" hidden>
+    <div class="mb-2 flex items-center gap-2.5">
+      <span class="flex h-7 w-7 flex-none items-center justify-center bg-signal">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 13l4 4L19 7"></path>
+        </svg>
+      </span>
+      <span class="font-display text-[1.4rem] font-extrabold text-ink">You're in. Welcome to The Pipeline.</span>
+    </div>
+    <p class="mb-5 text-ink-soft">
+      Verified as <span class="font-semibold text-ink" data-vg-email></span>. The job drops, office
+      hours, and the community are through here.
+    </p>
+    <a class={PRIMARY} data-vg-invite href="#" target="_blank" rel="noopener" hidden>
+      Open the Discord <span aria-hidden="true">&rarr;</span>
+    </a>
+    {formUrl && (
+      <a class={`${GHOST} mt-3`} href={formUrl} target="_blank" rel="noopener">Fill the interest form</a>
+    )}
+    <button type="button" class={`${SUBLINK} mt-4 block text-ink-soft hover:text-ink`} data-vg-reset>
+      Not you? Sign out
+    </button>
+  </section>
+
+  {/* blocked */}
+  <section data-vg="blocked" hidden>
+    <div class="mb-2 font-display text-[1.4rem] font-extrabold text-ink">
+      Almost. We're not at your campus yet.
+    </div>
+    <p class="mb-5 text-ink-soft">
+      The Pipeline is open to UC students right now. More campuses are coming. If you want yours
+      next, tell us you stopped by.
+    </p>
+    {formUrl && (
+      <a class={PRIMARY} href={formUrl} target="_blank" rel="noopener">
+        Leave your email <span aria-hidden="true">&rarr;</span>
+      </a>
+    )}
+    <button type="button" class={`${SUBLINK} mt-4 block text-ink-soft hover:text-ink`} data-vg-reset>
+      Use a different email
+    </button>
+  </section>
+
+  <p data-vg-note class="mt-3 font-mono text-[0.75rem] text-ink-soft" aria-live="polite" hidden></p>
+</div>
+
+<script>
+  import { partnerForEmail } from '../../lib/partners';
+
+  const root = document.querySelector<HTMLElement>('[data-vg-root]');
+  if (root) init(root);
+
+  function init(root: HTMLElement) {
+    // undefined = not loaded yet, null = configured-but-absent (env missing)
+    let supa: any;
+    let email = '';
+    const $ = <T extends Element>(s: string) => root.querySelector<T>(s);
+    const sections = root.querySelectorAll<HTMLElement>('[data-vg]');
+    const noteEl = $<HTMLElement>('[data-vg-note]');
+    const inviteEl = $<HTMLAnchorElement>('[data-vg-invite]');
+
+    const show = (state: string) => {
+      sections.forEach((s) => (s.hidden = s.getAttribute('data-vg') !== state));
+      setNote('');
+    };
+    const setNote = (msg: string) => {
+      if (!noteEl) return;
+      noteEl.textContent = msg;
+      noteEl.hidden = !msg;
+    };
+    const setEmail = (e: string) =>
+      root.querySelectorAll('[data-vg-email]').forEach((el) => (el.textContent = e));
+    const setBusy = (label: string) => {
+      const b = $<HTMLElement>('[data-vg-busy]');
+      if (b) b.textContent = label;
+      show('busy');
+    };
+    const notLive = () => setNote('Verification is not live yet. Check back shortly.');
+
+    async function ensureSupa() {
+      if (supa !== undefined) return supa;
+      const { getSupabase } = await import('../../lib/supabase');
+      supa = getSupabase();
+      return supa;
+    }
+
+    async function evaluate(client: any, userEmail: string) {
+      email = userEmail;
+      setEmail(userEmail);
+      if (!partnerForEmail(userEmail).ok) return show('blocked');
+      setBusy('Unlocking the Discord');
+      try {
+        const { data } = await client.auth.getSession();
+        const res = await fetch('/api/discord-invite', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${data.session?.access_token}` },
+        });
+        const body = await res.json().catch(() => ({}));
+        if (res.ok && body.invite) {
+          if (inviteEl) {
+            inviteEl.href = body.invite;
+            inviteEl.hidden = false;
+          }
+          show('verified');
+        } else if (res.status === 403) {
+          show('blocked');
+        } else {
+          if (inviteEl) inviteEl.hidden = true;
+          show('verified');
+          setNote('We could not load the invite just now. Refresh and try again.');
+        }
+      } catch {
+        if (inviteEl) inviteEl.hidden = true;
+        show('verified');
+        setNote('Network hiccup loading the invite. Refresh and try again.');
+      }
+    }
+
+    $('[data-vg-google]')?.addEventListener('click', async () => {
+      setNote('');
+      const client = await ensureSupa();
+      if (!client) return notLive();
+      setBusy('Redirecting to Google');
+      const { error } = await client.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${location.origin}/join` },
+      });
+      if (error) {
+        show('choose');
+        setNote(error.message || 'Could not start Google sign-in.');
+      }
+    });
+
+    $('[data-vg-email-form]')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      email = ($<HTMLInputElement>('#vg-email')?.value || '').trim();
+      if (!partnerForEmail(email).ok) {
+        setEmail(email);
+        return show('blocked');
+      }
+      const client = await ensureSupa();
+      if (!client) return notLive();
+      setBusy('Sending your code');
+      const { error } = await client.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: true },
+      });
+      if (error) {
+        show('choose');
+        setNote(error.message || 'Could not send the code. Try again.');
+      } else {
+        setEmail(email);
+        show('codeSent');
+      }
+    });
+
+    $('[data-vg-code-form]')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const code = ($<HTMLInputElement>('#vg-code')?.value || '').trim();
+      const client = await ensureSupa();
+      if (!client) return notLive();
+      setBusy('Verifying');
+      const { error } = await client.auth.verifyOtp({ email, token: code, type: 'email' });
+      if (error) {
+        show('codeSent');
+        setNote(error.message || 'That code did not work. Resend and try again.');
+      }
+      // success: onAuthStateChange fires and evaluate() takes over
+    });
+
+    $('[data-vg-resend]')?.addEventListener('click', async () => {
+      const client = await ensureSupa();
+      if (!client) return notLive();
+      setNote('Sending a new code...');
+      await client.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+      setNote('New code sent.');
+    });
+
+    root.querySelectorAll('[data-vg-reset]').forEach((b) =>
+      b.addEventListener('click', async () => {
+        const client = await ensureSupa();
+        if (client) await client.auth.signOut();
+        email = '';
+        const ei = $<HTMLInputElement>('#vg-email');
+        if (ei) ei.value = '';
+        const ci = $<HTMLInputElement>('#vg-code');
+        if (ci) ci.value = '';
+        show('choose');
+      })
+    );
+
+    $<HTMLInputElement>('#vg-code')?.addEventListener('input', (e) => {
+      const t = e.target as HTMLInputElement;
+      t.value = t.value.replace(/\D/g, '');
+    });
+
+    // Dev-only state preview: /join?gate=verified|blocked|codeSent
+    if (import.meta.env.DEV) {
+      const g = new URLSearchParams(location.search).get('gate');
+      if (g === 'verified') {
+        setEmail('student@uci.edu');
+        if (inviteEl) {
+          inviteEl.href = 'https://discord.gg/your-server';
+          inviteEl.hidden = false;
+        }
+        show('verified');
+        return;
+      }
+      if (g === 'blocked') {
+        setEmail('student@stanford.edu');
+        show('blocked');
+        return;
+      }
+      if (g === 'codeSent') {
+        setEmail('student@uci.edu');
+        show('codeSent');
+        return;
+      }
+    }
+
+    // Restore an existing session or finish an OAuth return. Only spin up
+    // Supabase when there is plausibly a session, so a fresh visit stays light.
+    const looksLikeReturn =
+      location.hash.includes('access_token') ||
+      location.search.includes('code=') ||
+      Object.keys(localStorage).some((k) => k.startsWith('sb-'));
+    if (looksLikeReturn) {
+      (async () => {
+        const client = await ensureSupa();
+        if (!client) return;
+        const { data } = await client.auth.getSession();
+        if (data.session?.user?.email) await evaluate(client, data.session.user.email);
+        client.auth.onAuthStateChange((_event: string, session: any) => {
+          if (session?.user?.email) evaluate(client, session.user.email);
+        });
+      })();
+    }
+  }
+</script>

@@ -1,0 +1,40 @@
+---
+import Mark from './ui/Mark.astro';
+import { nav, navCta, footer } from '../data/site';
+
+const footNav = [{ label: 'Home', href: '/' }, ...nav, navCta];
+---
+<footer class="on-ink relative overflow-hidden border-t-2 border-line bg-ink py-16 text-ondark">
+  <div aria-hidden="true" class="grid-ink absolute inset-0 opacity-50"></div>
+  <div class="wrap relative">
+    <div class="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
+      <div>
+        <a
+          href="/"
+          class="inline-flex items-center gap-2.5 font-display text-[1.15rem] font-semibold text-white"
+        >
+          <Mark size={32} />
+          The Pipeline
+        </a>
+        <p class="mt-5 max-w-sm text-[14px] leading-relaxed text-ondark-soft">
+          A fellow-run community at UC Irvine handing over the access that was always there.
+        </p>
+      </div>
+      <nav class="grid grid-cols-2 gap-x-12 gap-y-3 text-[14px]" aria-label="Footer">
+        {
+          footNav.map((item) => (
+            <a href={item.href} class="text-ondark-soft transition-colors hover:text-white">
+              {item.label}
+            </a>
+          ))
+        }
+      </nav>
+    </div>
+    <div
+      class="mt-12 flex flex-col gap-2 border-t border-line-dark pt-6 font-mono text-[0.72rem] uppercase tracking-[0.18em] text-ondark-soft md:flex-row md:items-center md:justify-between"
+    >
+      <span>{footer.builtBy}</span>
+      <span>{footer.copyright}</span>
+    </div>
+  </div>
+</footer>

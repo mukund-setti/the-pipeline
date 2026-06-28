@@ -1,0 +1,19 @@
+---
+import Stat from './Stat.astro';
+import { stats as defaultStats, type Stat as StatType } from '../../data/site';
+
+interface Props {
+  stats?: StatType[];
+  class?: string;
+}
+const { stats = defaultStats, class: className = '' } = Astro.props;
+// gap-px over a black backdrop draws hairline dividers at any column count.
+---
+<div
+  class:list={[
+    'grid grid-cols-4 gap-px overflow-hidden border-2 border-line bg-line max-[860px]:grid-cols-2 max-[560px]:grid-cols-1',
+    className,
+  ]}
+>
+  {stats.map((s) => <Stat num={s.num} cap={s.cap} win={s.win} />)}
+</div>

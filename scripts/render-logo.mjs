@@ -1,0 +1,10 @@
+import puppeteer from 'puppeteer-core';
+const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+const b = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox','--allow-file-access-from-files'] });
+const p = await b.newPage();
+await p.setViewport({ width: 240, height: 240, deviceScaleFactor: 2 });
+await p.goto('file:///C:/Users/mukun/the-pipeline/public/favicon.svg', { waitUntil: 'networkidle0' });
+await p.evaluate(() => { document.documentElement.style.background='transparent'; const s=document.querySelector('svg'); if(s){ s.setAttribute('width','240'); s.setAttribute('height','240'); } });
+await new Promise(r=>setTimeout(r,200));
+await p.screenshot({ path: 'scripts/_shots/oglogo.png', clip: { x:0,y:0,width:240,height:240 } });
+await b.close(); console.log('logo rendered');

@@ -1,0 +1,67 @@
+---
+import Layout from '../components/Layout.astro';
+import PageHero from '../components/ui/PageHero.astro';
+import SectionHead from '../components/ui/SectionHead.astro';
+import StatGrid from '../components/ui/StatGrid.astro';
+import OutcomeCard from '../components/ui/OutcomeCard.astro';
+import Button from '../components/ui/Button.astro';
+import CtaBand from '../components/ui/CtaBand.astro';
+import ScrollReveal from '../components/ui/ScrollReveal.tsx';
+import { placements } from '../data/site';
+---
+<Layout
+  title="Outcomes · The Pipeline"
+  description="Where The Pipeline's fellows have landed: real internships, programs, and offers from a fellow-run community at UC Irvine."
+  ogDescription="Real outcomes from real fellows. Over 65% have secured internships."
+>
+  <PageHero eyebrow="Outcomes">
+    <Fragment slot="title">Where our fellows <span class="hl">land.</span></Fragment>
+    <Fragment slot="lede">
+      No vanity metrics, just real internships, programs, and offers that real fellows have earned.
+      <b>Over 65% of our fellows have secured an internship.</b>
+    </Fragment>
+  </PageHero>
+
+  {/* ── Stats ────────────────────────────────────────────── */}
+  <section class="pb-2 pt-9">
+    <div class="wrap">
+      <ScrollReveal client:visible>
+        <StatGrid />
+      </ScrollReveal>
+    </div>
+  </section>
+
+  {/* ── The board ────────────────────────────────────────── */}
+  <section class="pb-2 pt-12">
+    <div class="wrap">
+      <SectionHead eyebrow="The board" title="Internships, programs & offers." class="mb-12" />
+      <ScrollReveal
+        stagger
+        client:visible
+        className="grid grid-cols-3 gap-[18px] max-[860px]:grid-cols-2 max-[560px]:grid-cols-1"
+      >
+        {placements.map((p) => <OutcomeCard org={p.org} role={p.role} mark={p.mark} logo={p.logo} />)}
+        <OutcomeCard cta org="…and the next one is yours." href="/join/" ctaLabel="Join the Pipeline" />
+      </ScrollReveal>
+      <p class="mt-7 font-mono text-[0.78rem] tracking-[0.04em] text-ink-soft">
+        Real outcomes from real fellows. More land every recruiting cycle.
+      </p>
+    </div>
+  </section>
+
+  {/* ── CTA ──────────────────────────────────────────────── */}
+  <section class="py-16">
+    <div class="wrap">
+      <CtaBand eyebrow="Your turn" title="Add your name to the board.">
+        <Fragment slot="body">
+          Every fellow on this list started by joining.
+          <b>Free, fellow-run, and built for people who have been locked out.</b>
+        </Fragment>
+        <Fragment slot="actions">
+          <Button href="/join/" arrow>Join the Pipeline</Button>
+          <Button href="/how/" variant="ghostDark">How it works</Button>
+        </Fragment>
+      </CtaBand>
+    </div>
+  </section>
+</Layout>

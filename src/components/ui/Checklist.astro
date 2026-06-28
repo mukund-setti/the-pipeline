@@ -1,0 +1,22 @@
+---
+interface Props {
+  /** Each item may contain trusted inline HTML (e.g. <b>). */
+  items: string[];
+  class?: string;
+}
+const { items, class: className = '' } = Astro.props;
+---
+<ul class:list={['max-w-[62ch] space-y-5', className]}>
+  {
+    items.map((item) => (
+      <li class="flex gap-3.5 [&_b]:font-semibold [&_b]:text-ink">
+        <span class="mt-1 flex-none font-mono text-signal" aria-hidden="true">
+          &rarr;
+        </span>
+        <span class="text-[15.5px] leading-relaxed text-ink-soft">
+          <Fragment set:html={item} />
+        </span>
+      </li>
+    ))
+  }
+</ul>

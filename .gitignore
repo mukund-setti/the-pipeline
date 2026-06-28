@@ -1,0 +1,29 @@
+# build output
+dist/
+.astro/
+
+# dependencies
+node_modules/
+
+# spec working images (rendered from pipelinespec.pdf)
+_specimg/
+
+# QA artifacts (screenshots + lighthouse reports)
+scripts/_shots/
+
+# env + local
+.env
+.env.production
+*.local
+
+# editor / os
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# netlify
+.netlify/
+
+# Lovable reference (kept locally only; the zip bundles another project's .env)
+LovableUI/

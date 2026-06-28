@@ -1,0 +1,179 @@
+---
+import Layout from '../components/Layout.astro';
+import Eyebrow from '../components/ui/Eyebrow.astro';
+import Conduit from '../components/ui/Conduit.astro';
+import Button from '../components/ui/Button.astro';
+import SectionHead from '../components/ui/SectionHead.astro';
+import StatGrid from '../components/ui/StatGrid.astro';
+import StageCard from '../components/ui/StageCard.astro';
+import CtaBand from '../components/ui/CtaBand.astro';
+import DropFeed from '../components/ui/DropFeed.tsx';
+import ScrollReveal from '../components/ui/ScrollReveal.tsx';
+import { site, hero, placements, stages } from '../data/site';
+---
+<Layout
+  title="The Pipeline · A fellow-run community at UC Irvine"
+  description={site.description}
+  ogTitle="The Pipeline · UC Irvine"
+  ogDescription={site.ogDescription}
+>
+  {/* ── Hero ─────────────────────────────────────────────── */}
+  <section class="relative overflow-hidden pt-[92px] max-[560px]:pt-14">
+    <div aria-hidden="true" class="pointer-events-none absolute inset-0">
+      <img
+        src="/img/hero-students.webp"
+        alt=""
+        width="1800"
+        height="1208"
+        decoding="async"
+        fetchpriority="low"
+        class="absolute inset-y-0 right-0 h-full w-full object-cover object-center opacity-20 md:w-[62%] md:opacity-55"
+      />
+      <div class="photo-wash-right absolute inset-0 hidden md:block"></div>
+      <div class="absolute inset-0 bg-bg/75 md:hidden"></div>
+      <div class="absolute inset-y-0 right-0 hidden w-[3px] bg-signal/40 md:block"></div>
+    </div>
+
+    <div class="wrap relative">
+      <Eyebrow class="animate-riseIn flex" as="div">{hero.eyebrow}</Eyebrow>
+      <h1
+        class="animate-riseIn mb-[26px] mt-[26px] max-w-[16ch] font-display text-hero font-semibold tracking-tight text-ink"
+        style="animation-delay:80ms"
+      >
+        We don't fix the pipeline. We <span class="hl">are</span> the pipeline.
+      </h1>
+      <p
+        class="animate-riseIn mb-[34px] max-w-[54ch] text-lede text-ink-soft [&_b]:font-semibold [&_b]:text-ink"
+        style="animation-delay:160ms"
+      >
+        A fellow-run community at UC Irvine moving underrepresented <b>undergrads in tech</b> into
+        the rooms they were kept out of, through <b>gatekept job drops</b>, <b>resume reviews</b>,
+        and <b>mock interviews</b> run by people who have already landed.
+      </p>
+      <div class="animate-riseIn flex flex-wrap items-center gap-3" style="animation-delay:240ms">
+        <Button href="/join/" arrow>Join the Pipeline</Button>
+        <Button href="/how/" variant="ghost">See how it works</Button>
+      </div>
+      <div
+        class="animate-riseIn mt-7 inline-flex items-center gap-2.5 border-2 border-line bg-surface px-4 py-2 font-mono text-[0.72rem] uppercase tracking-wider text-ink-soft"
+        style="animation-delay:300ms"
+      >
+        <span class="h-2 w-2 flex-none bg-signal" aria-hidden="true"></span>
+        {hero.proof}
+      </div>
+      <div class="animate-riseIn mt-14" style="animation-delay:360ms">
+        <Conduit notes />
+      </div>
+    </div>
+  </section>
+
+  {/* ── Drop feed ────────────────────────────────────────── */}
+  <section class="on-ink relative overflow-hidden border-y-2 border-line bg-ink py-12 text-ondark">
+    <div aria-hidden="true" class="grid-ink absolute inset-0 opacity-30"></div>
+    <div class="wrap relative">
+      <div class="mb-6 flex items-end justify-between gap-4">
+        <Eyebrow tone="onDark">Where our fellows have landed</Eyebrow>
+        <a
+          href="/outcomes/"
+          class="hidden font-mono text-[0.74rem] uppercase tracking-wider text-ondark-link transition-colors hover:text-white md:inline"
+        >
+          See all outcomes &rarr;
+        </a>
+      </div>
+    </div>
+    <DropFeed placements={placements} client:visible />
+    <div class="wrap relative">
+      <div class="mt-6 md:hidden">
+        <a
+          href="/outcomes/"
+          class="font-mono text-[0.74rem] uppercase tracking-wider text-ondark-link"
+          >See all outcomes &rarr;</a
+        >
+      </div>
+    </div>
+  </section>
+
+  {/* ── Stats ────────────────────────────────────────────── */}
+  <section class="py-20 md:py-24">
+    <div class="wrap">
+      <ScrollReveal client:visible>
+        <StatGrid />
+      </ScrollReveal>
+    </div>
+  </section>
+
+  {/* ── How it works (teaser) ────────────────────────────── */}
+  <section class="pb-20 md:pb-28">
+    <div class="wrap">
+      <SectionHead eyebrow="How it works" title="Three stages, one direction: forward." class="mb-12" />
+      <ScrollReveal
+        stagger
+        client:visible
+        className="grid grid-cols-3 gap-5 max-[860px]:grid-cols-2 max-[560px]:grid-cols-1"
+      >
+        {
+          stages.map((s) => (
+            <StageCard num={s.num} label={s.label} title={s.title} body={s.short} />
+          ))
+        }
+      </ScrollReveal>
+      <div class="mt-10">
+        <Button href="/how/" variant="ghost" arrow>See what every fellow gets</Button>
+      </div>
+    </div>
+  </section>
+
+  {/* ── Mission (teaser) ─────────────────────────────────── */}
+  <section class="on-ink relative overflow-hidden bg-ink py-24 text-ondark">
+    <img
+      src="/img/mission-students.webp"
+      alt=""
+      aria-hidden="true"
+      loading="lazy"
+      decoding="async"
+      width="1600"
+      height="1104"
+      class="absolute inset-0 h-full w-full object-cover opacity-20"
+    />
+    <div aria-hidden="true" class="photo-wash-ink absolute inset-0"></div>
+    <div aria-hidden="true" class="grid-ink absolute inset-0 opacity-40"></div>
+    <div class="wrap relative">
+      <ScrollReveal client:visible>
+        <div class="mx-auto max-w-3xl text-center">
+          <Eyebrow tone="onDark" class="justify-center">Why we exist</Eyebrow>
+          <h2
+            class="mx-auto mt-5 max-w-[18ch] font-display text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.04] tracking-tight text-white"
+          >
+            The talent was <span class="text-signal">never</span> the problem.
+          </h2>
+          <p
+            class="mx-auto mt-6 max-w-[58ch] text-[clamp(1.05rem,1.7vw,1.3rem)] leading-relaxed text-ondark-soft [&_b]:font-semibold [&_b]:text-white"
+          >
+            People call it the "pipeline problem", as if the talent is not out there. It is. What is
+            gatekept is <b>access</b>. The Pipeline hands that access to the people who have been
+            locked out of it, and lets the work speak for itself.
+          </p>
+          <div class="mt-8 flex justify-center">
+            <Button href="/about/" variant="ghostDark" arrow>Read the whole story</Button>
+          </div>
+        </div>
+      </ScrollReveal>
+    </div>
+  </section>
+
+  {/* ── Join CTA ─────────────────────────────────────────── */}
+  <section class="py-20">
+    <div class="wrap">
+      <CtaBand eyebrow="Join" title="Get in the pipeline.">
+        <Fragment slot="body">
+          Undergrad, underrepresented in tech, and tired of doing this alone?
+          <b>You're who we built this for.</b> It's free, it's run by fellows, and it works.
+        </Fragment>
+        <Fragment slot="actions">
+          <Button href="/join/" arrow>How to join</Button>
+          <Button href="/join/" variant="ghostDark">Join the Discord</Button>
+        </Fragment>
+      </CtaBand>
+    </div>
+  </section>
+</Layout>

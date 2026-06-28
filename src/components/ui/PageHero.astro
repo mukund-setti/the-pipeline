@@ -1,0 +1,25 @@
+---
+import Eyebrow from './Eyebrow.astro';
+import Conduit from './Conduit.astro';
+
+interface Props {
+  eyebrow: string;
+  /** Show the signature conduit rail under the lede. */
+  conduit?: boolean;
+}
+const { eyebrow, conduit = false } = Astro.props;
+---
+<section class="pb-2 pt-20 max-[560px]:pt-14">
+  <div class="wrap">
+    <Eyebrow>{eyebrow}</Eyebrow>
+    <h1
+      class="mb-5 mt-[18px] max-w-[18ch] font-display text-pagehero font-semibold tracking-tight text-ink"
+    >
+      <slot name="title" />
+    </h1>
+    <p class="max-w-[58ch] text-lede text-ink-soft [&_b]:font-semibold [&_b]:text-ink">
+      <slot name="lede" />
+    </p>
+    {conduit && <Conduit class="mt-12" />}
+  </div>
+</section>

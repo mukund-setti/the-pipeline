@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Update the host below if the production domain changes (must match astro.config.mjs `site`).
+Sitemap: https://the-pipeline.netlify.app/sitemap-index.xml

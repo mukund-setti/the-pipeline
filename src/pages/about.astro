@@ -1,0 +1,82 @@
+---
+import Layout from '../components/Layout.astro';
+import PageHero from '../components/ui/PageHero.astro';
+import SectionHead from '../components/ui/SectionHead.astro';
+import Checklist from '../components/ui/Checklist.astro';
+import Callout from '../components/ui/Callout.astro';
+import Faq from '../components/ui/Faq.astro';
+import Button from '../components/ui/Button.astro';
+import CtaBand from '../components/ui/CtaBand.astro';
+import { aboutStory, differences } from '../data/site';
+---
+<Layout
+  title="About · The Pipeline"
+  description="Why The Pipeline exists: the talent was never the problem, access was. A fellow-run community at UC Irvine handing gatekept access to the people locked out of it."
+  ogDescription="The talent was never the problem. What's gatekept is access, so we hand it over."
+>
+  <PageHero eyebrow="Why we exist">
+    <Fragment slot="title">The talent was <span class="hl">never</span> the problem.</Fragment>
+    <Fragment slot="lede">
+      For years the industry called it a "pipeline problem", a polite way of saying the talent
+      wasn't there. We think that's backwards.
+    </Fragment>
+  </PageHero>
+
+  {/* ── The story ────────────────────────────────────────── */}
+  <section class="pb-2 pt-10">
+    <div class="wrap">
+      <div class="max-w-[62ch] space-y-[18px]">
+        {
+          aboutStory.map((p) => (
+            <p
+              class="text-[1.08rem] text-ink-soft [&_b]:font-semibold [&_b]:text-ink"
+              set:html={p}
+            />
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  {/* ── What makes us different ──────────────────────────── */}
+  <section class="py-11">
+    <div class="wrap">
+      <SectionHead eyebrow="What makes us different" title="Not a club. A conduit." class="mb-11" />
+      <Checklist items={differences} />
+    </div>
+  </section>
+
+  {/* ── Going official ───────────────────────────────────── */}
+  <section class="py-11 pt-0">
+    <div class="wrap">
+      <Callout eyebrow="What's next" title="Going official at UC Irvine.">
+        This fall, The Pipeline becomes an official UC Irvine student organization: a bigger room,
+        the same mission, and more fellows pulling each other up.
+      </Callout>
+    </div>
+  </section>
+
+  {/* ── FAQ ──────────────────────────────────────────────── */}
+  <section class="py-16">
+    <div class="wrap">
+      <SectionHead eyebrow="Questions" title="The basics." class="mb-11" />
+      <Faq />
+    </div>
+  </section>
+
+  {/* ── CTA ──────────────────────────────────────────────── */}
+  <section class="pb-16">
+    <div class="wrap">
+      <CtaBand eyebrow="Join" title="Be the next fellow in.">
+        <Fragment slot="body">
+          If you have ever felt like the door was closed, this is us holding it open.
+          <b>Free, fellow-run, and built for you.</b>
+        </Fragment>
+        <Fragment slot="actions">
+          <Button href="/join/" arrow>Join the Pipeline</Button>
+          <Button href="/outcomes/" variant="ghostDark">See where fellows land</Button>
+        </Fragment>
+      </CtaBand>
+    </div>
+  </section>
+</Layout>

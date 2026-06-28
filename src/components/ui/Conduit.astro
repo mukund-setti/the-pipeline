@@ -1,0 +1,25 @@
+---
+/**
+ * The signature animated rail: a dashed ink current flowing toward a raw red
+ * arrival marker on the right. Decorative, so aria-hidden.
+ */
+interface Props {
+  notes?: boolean;
+  class?: string;
+}
+const { notes = false, class: className = '' } = Astro.props;
+---
+<div class:list={['relative', className]} aria-hidden="true">
+  <div class="relative h-2 overflow-hidden bg-brand-soft">
+    <div class="conduit-current animate-flow absolute inset-0 opacity-90"></div>
+    <div class="conduit-tip absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2"></div>
+  </div>
+  {
+    notes && (
+      <div class="mt-3 flex justify-between font-mono text-[0.68rem] uppercase tracking-[0.14em] text-ink-soft max-[560px]:text-[0.6rem]">
+        <span>Talent in</span>
+        <span>Offers out &darr;</span>
+      </div>
+    )
+  }
+</div>

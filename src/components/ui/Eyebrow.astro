@@ -1,0 +1,30 @@
+---
+interface Props {
+  /** brand = light bg / onDark = ink bg / deep = on tint callout. */
+  tone?: 'brand' | 'onDark' | 'deep';
+  as?: string;
+  class?: string;
+}
+const { tone = 'brand', as = 'span', class: className = '' } = Astro.props;
+const tones: Record<NonNullable<Props['tone']>, string> = {
+  brand: 'text-ink-soft',
+  onDark: 'text-ondark-soft',
+  deep: 'text-ink',
+};
+const ticks: Record<NonNullable<Props['tone']>, string> = {
+  brand: 'bg-line',
+  onDark: 'bg-ondark-soft/40',
+  deep: 'bg-ink',
+};
+const Tag = as as any;
+---
+<Tag
+  class:list={[
+    'inline-flex items-center gap-2.5 font-mono text-eyebrow font-medium uppercase',
+    tones[tone],
+    className,
+  ]}
+>
+  <span aria-hidden="true" class:list={['h-px w-6 flex-none', ticks[tone]]}></span>
+  <slot />
+</Tag>

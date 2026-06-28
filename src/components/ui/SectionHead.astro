@@ -1,0 +1,22 @@
+---
+import Eyebrow from './Eyebrow.astro';
+
+interface Props {
+  eyebrow: string;
+  title: string;
+  tone?: 'brand' | 'onDark';
+  class?: string;
+}
+const { eyebrow, title, tone = 'brand', class: className = '' } = Astro.props;
+---
+<div class:list={['max-w-[34ch]', className]}>
+  <Eyebrow tone={tone === 'onDark' ? 'onDark' : 'brand'}>{eyebrow}</Eyebrow>
+  <h2
+    class:list={[
+      'mt-4 font-display text-h2 font-semibold tracking-tight',
+      tone === 'onDark' ? 'text-white' : 'text-ink',
+    ]}
+  >
+    {title}
+  </h2>
+</div>

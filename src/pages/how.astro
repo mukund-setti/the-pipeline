@@ -1,0 +1,94 @@
+---
+import Layout from '../components/Layout.astro';
+import PageHero from '../components/ui/PageHero.astro';
+import SectionHead from '../components/ui/SectionHead.astro';
+import StageCard from '../components/ui/StageCard.astro';
+import FeatureCard from '../components/ui/FeatureCard.astro';
+import Eyebrow from '../components/ui/Eyebrow.astro';
+import Button from '../components/ui/Button.astro';
+import CtaBand from '../components/ui/CtaBand.astro';
+import ScrollReveal from '../components/ui/ScrollReveal.tsx';
+import { stages, features } from '../data/site';
+---
+<Layout
+  title="How It Works · The Pipeline"
+  description="How The Pipeline works: gatekept job drops, resume reviews, mock interviews, office hours, and a community of fellows who pull each other up."
+  ogDescription="Three stages, one direction: forward. Here is everything a fellow gets."
+>
+  <PageHero eyebrow="How it works" conduit>
+    <Fragment slot="title">Three stages, one direction: forward.</Fragment>
+    <Fragment slot="lede">
+      Recruiting is a game with hidden rules. We don't pretend it isn't. We just hand you the
+      rulebook, the postings, and a room full of people who have already played it.
+    </Fragment>
+  </PageHero>
+
+  {/* ── The three stages ─────────────────────────────────── */}
+  <section class="pb-2 pt-12">
+    <div class="wrap">
+      <SectionHead eyebrow="The three stages" title="Get in. Get sharp. Get the offer." class="mb-12" />
+      <ScrollReveal
+        stagger
+        client:visible
+        className="grid grid-cols-3 gap-5 max-[860px]:grid-cols-2 max-[560px]:grid-cols-1"
+      >
+        {
+          stages.map((s, i) => (
+            <StageCard
+              num={s.num}
+              label={s.label}
+              title={s.title}
+              body={s.body}
+              showPipe={i < stages.length - 1}
+            />
+          ))
+        }
+      </ScrollReveal>
+    </div>
+  </section>
+
+  {/* ── What every fellow gets ───────────────────────────── */}
+  <section class="py-16">
+    <div class="wrap">
+      <SectionHead eyebrow="What every fellow gets" title="Membership, in plain terms." class="mb-12" />
+      <ScrollReveal
+        stagger
+        client:visible
+        className="grid grid-cols-3 gap-5 max-[860px]:grid-cols-2 max-[560px]:grid-cols-1"
+      >
+        {features.map((f) => <FeatureCard icon={f.icon} title={f.title} body={f.body} />)}
+      </ScrollReveal>
+    </div>
+  </section>
+
+  {/* ── The loop ─────────────────────────────────────────── */}
+  <section class="pb-12 pt-2">
+    <div class="wrap max-w-[820px]">
+      <Eyebrow>The loop</Eyebrow>
+      <h2 class="mb-[18px] mt-3.5 max-w-[24ch] font-display text-[clamp(1.7rem,3.6vw,2.4rem)] font-semibold tracking-[-0.02em] text-ink">
+        Every fellow who lands makes the next one more likely to.
+      </h2>
+      <p class="max-w-[62ch] text-[1.08rem] text-ink-soft [&_b]:font-semibold [&_b]:text-ink">
+        That is the entire model. Someone shares the posting that got them the interview. Someone
+        runs the mock that calms the next person's nerves. The network compounds, and the people who
+        were once locked out become the ones holding the door. <b>You get in, you get the offer, you
+        come back.</b>
+      </p>
+    </div>
+  </section>
+
+  {/* ── CTA ──────────────────────────────────────────────── */}
+  <section class="py-16">
+    <div class="wrap">
+      <CtaBand eyebrow="Ready" title="Stop applying alone.">
+        <Fragment slot="body">
+          Joining takes two minutes and costs nothing. The next drop might be the one.
+        </Fragment>
+        <Fragment slot="actions">
+          <Button href="/join/" arrow>Join the Pipeline</Button>
+          <Button href="/outcomes/" variant="ghostDark">See where fellows land</Button>
+        </Fragment>
+      </CtaBand>
+    </div>
+  </section>
+</Layout>

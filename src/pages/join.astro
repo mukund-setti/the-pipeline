@@ -1,0 +1,45 @@
+---
+import Layout from '../components/Layout.astro';
+import PageHero from '../components/ui/PageHero.astro';
+import SectionHead from '../components/ui/SectionHead.astro';
+import JoinCard from '../components/ui/JoinCard.astro';
+import Checklist from '../components/ui/Checklist.astro';
+import { expectations } from '../data/site';
+---
+<Layout
+  title="Join · The Pipeline"
+  description="Join The Pipeline: a free, fellow-run community at UC Irvine. Get the gatekept job drops, resume reviews, and mock interviews. Join the Discord to get started."
+  ogDescription="Free, fellow-run, and built for people who've been locked out. Get in."
+>
+  <PageHero eyebrow="Join">
+    <Fragment slot="title">Get in the pipeline.</Fragment>
+    <Fragment slot="lede">
+      Undergrad, underrepresented in tech, and tired of doing this alone?
+      <b>You're who we built this for.</b> It's free, it's run by fellows, and it works.
+    </Fragment>
+  </PageHero>
+
+  {/* ── Join card ────────────────────────────────────────── */}
+  <section class="pb-2 pt-10">
+    <div class="wrap">
+      <JoinCard />
+    </div>
+  </section>
+
+  {/* ── Once you're in ───────────────────────────────────── */}
+  <section class="relative overflow-hidden border-t-2 border-line py-20">
+    <img
+      src="/img/join-students.webp"
+      alt=""
+      aria-hidden="true"
+      loading="lazy"
+      decoding="async"
+      class="absolute inset-0 h-full w-full object-cover opacity-[0.12]"
+    />
+    <div aria-hidden="true" class="photo-wash-paper absolute inset-0"></div>
+    <div class="wrap relative">
+      <SectionHead eyebrow="Once you're in" title="Here's what changes." class="mb-11" />
+      <Checklist items={expectations} />
+    </div>
+  </section>
+</Layout>

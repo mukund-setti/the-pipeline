@@ -1,0 +1,11 @@
+import puppeteer from 'puppeteer-core';
+const CHROME='C:/Program Files/Google/Chrome/Application/chrome.exe';
+const b=await puppeteer.launch({executablePath:CHROME,headless:'new',args:['--no-sandbox','--hide-scrollbars']});
+const p=await b.newPage();
+await p.setViewport({width:1000,height:900,deviceScaleFactor:2});
+await p.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);
+await p.goto('http://localhost:8100/join/',{waitUntil:'networkidle0'});
+await new Promise(r=>setTimeout(r,400));
+const el=await p.$('[data-vg-google]');
+await el.screenshot({path:'scripts/_shots/google-btn.png'});
+await b.close();console.log('shot');

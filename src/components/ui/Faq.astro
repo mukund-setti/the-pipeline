@@ -1,0 +1,13 @@
+---
+import FaqItem from './FaqItem.astro';
+import { faq as defaultFaq, type FaqItem as FaqItemType } from '../../data/site';
+
+interface Props {
+  items?: FaqItemType[];
+  class?: string;
+}
+const { items = defaultFaq, class: className = '' } = Astro.props;
+---
+<div class:list={['max-w-[760px] border-2 border-line bg-surface px-6', className]}>
+  {items.map((f) => <FaqItem q={f.q} a={f.a} />)}
+</div>
