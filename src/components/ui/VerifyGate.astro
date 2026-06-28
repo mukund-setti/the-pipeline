@@ -41,27 +41,23 @@ const SUBLINK = 'font-mono text-[0.72rem] uppercase tracking-[0.08em]';
     <form data-vg-email-form novalidate>
       <label class={LABEL} for="vg-email">University email</label>
       <input id="vg-email" class={INPUT} type="email" inputmode="email" autocomplete="email" required placeholder="you@uci.edu" />
-      <button type="submit" class={`${GHOST} mt-3`}>Email me a code</button>
+      <button type="submit" class={`${GHOST} mt-3`}>Email me a sign-in link</button>
     </form>
 
     <p class="mt-4 font-mono text-[0.72rem] leading-relaxed text-ink-soft">
-      Open to UC students for now. We only ever use your email to send the code.
+      Open to UC students for now. We only ever email your sign-in link.
     </p>
   </section>
 
-  {/* codeSent */}
+  {/* linkSent */}
   <section data-vg="codeSent" hidden>
-    <p class="mb-1 text-ink">
-      We sent a 6-digit code to <span class="font-semibold" data-vg-email></span>.
+    <div class="mb-2 font-display text-[1.4rem] font-extrabold text-ink">Check your email.</div>
+    <p class="mb-5 text-ink-soft">
+      We sent a sign-in link to <span class="font-semibold text-ink" data-vg-email></span>. Open it
+      from your inbox to verify and get in. It can take a minute; check spam too.
     </p>
-    <p class="mb-5 text-[0.95rem] text-ink-soft">Enter it below to verify and get in.</p>
-    <form data-vg-code-form>
-      <label class={LABEL} for="vg-code">Verification code</label>
-      <input id="vg-code" class={`${INPUT} font-mono tracking-[0.4em]`} inputmode="numeric" autocomplete="one-time-code" maxlength="6" required placeholder="000000" />
-      <button type="submit" class={`${PRIMARY} mt-3`}>Verify and get in</button>
-    </form>
-    <div class="mt-4 flex flex-wrap gap-x-5 gap-y-1">
-      <button type="button" class={`${SUBLINK} text-ink underline-offset-4 hover:underline`} data-vg-resend>Resend code</button>
+    <div class="flex flex-wrap gap-x-5 gap-y-1">
+      <button type="button" class={`${SUBLINK} text-ink underline-offset-4 hover:underline`} data-vg-resend>Resend link</button>
       <button type="button" class={`${SUBLINK} text-ink-soft hover:text-ink`} data-vg-reset>Use a different email</button>
     </div>
   </section>
@@ -217,40 +213,29 @@ const SUBLINK = 'font-mono text-[0.72rem] uppercase tracking-[0.08em]';
       }
       const client = await ensureSupa();
       if (!client) return notLive();
-      setBusy('Sending your code');
+      setBusy('Sending your link');
       const { error } = await client.auth.signInWithOtp({
         email,
-        options: { shouldCreateUser: true },
+        options: { shouldCreateUser: true, emailRedirectTo: `${location.origin}/join` },
       });
       if (error) {
         show('choose');
-        setNote(error.message || 'Could not send the code. Try again.');
+        setNote(error.message || 'Could not send the link. Try again.');
       } else {
         setEmail(email);
         show('codeSent');
       }
     });
 
-    $('[data-vg-code-form]')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const code = ($<HTMLInputElement>('#vg-code')?.value || '').trim();
-      const client = await ensureSupa();
-      if (!client) return notLive();
-      setBusy('Verifying');
-      const { error } = await client.auth.verifyOtp({ email, token: code, type: 'email' });
-      if (error) {
-        show('codeSent');
-        setNote(error.message || 'That code did not work. Resend and try again.');
-      }
-      // success: onAuthStateChange fires and evaluate() takes over
-    });
-
     $('[data-vg-resend]')?.addEventListener('click', async () => {
       const client = await ensureSupa();
       if (!client) return notLive();
-      setNote('Sending a new code...');
-      await client.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
-      setNote('New code sent.');
+      setNote('Sending a new link...');
+      await client.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: true, emailRedirectTo: `${location.origin}/join` },
+      });
+      setNote('New link sent.');
     });
 
     root.querySelectorAll('[data-vg-reset]').forEach((b) =>
@@ -260,16 +245,9 @@ const SUBLINK = 'font-mono text-[0.72rem] uppercase tracking-[0.08em]';
         email = '';
         const ei = $<HTMLInputElement>('#vg-email');
         if (ei) ei.value = '';
-        const ci = $<HTMLInputElement>('#vg-code');
-        if (ci) ci.value = '';
         show('choose');
       })
     );
-
-    $<HTMLInputElement>('#vg-code')?.addEventListener('input', (e) => {
-      const t = e.target as HTMLInputElement;
-      t.value = t.value.replace(/\D/g, '');
-    });
 
     // Dev-only state preview: /join?gate=verified|blocked|codeSent
     if (import.meta.env.DEV) {

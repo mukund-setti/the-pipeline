@@ -17,7 +17,9 @@ export function getSupabase(): SupabaseClient | null {
       detectSessionInUrl: true,
       persistSession: true,
       autoRefreshToken: true,
-      flowType: 'pkce',
+      // Implicit so a magic link works even when opened on a different device
+      // than it was requested from (common: request on laptop, click on phone).
+      flowType: 'implicit',
     },
   });
   return client;
