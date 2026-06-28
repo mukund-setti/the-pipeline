@@ -5,9 +5,8 @@ import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import vercel from '@astrojs/vercel';
 
-// TODO: set this to the real production domain before the final deploy.
-// Canonical URLs + sitemap + OG absolute URLs all derive from `site`.
-const SITE = 'https://the-pipeline.vercel.app';
+// Production domain. Canonical URLs + sitemap + OG absolute URLs derive from this.
+const SITE = 'https://pipelineco.org';
 
 // https://astro.build/config
 export default defineConfig({
