@@ -273,6 +273,20 @@ const SUBLINK = 'font-mono text-[0.72rem] uppercase tracking-[0.08em]';
       }
     }
 
+    // Surface an auth error returned in the URL (expired/used magic link, denied
+    // OAuth, etc.), then strip it off the URL.
+    {
+      const h = new URLSearchParams(location.hash.replace(/^#/, ''));
+      if (h.get('error')) {
+        history.replaceState(null, '', location.pathname);
+        setNote(
+          h.get('error_code') === 'otp_expired'
+            ? 'That link expired or was already used. Request a fresh one and open the newest email right away.'
+            : 'That sign-in did not go through. Request a new link and try again.'
+        );
+      }
+    }
+
     // Restore an existing session or finish an OAuth return. Only spin up
     // Supabase when there is plausibly a session, so a fresh visit stays light.
     const looksLikeReturn =
