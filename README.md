@@ -9,7 +9,7 @@ A fellow-run community at UC Irvine moving underrepresented technologists into t
 - **TypeScript** (strict).
 - **Self-hosted fonts** via `@fontsource` (Bricolage Grotesque, Inter, JetBrains Mono). No Google Fonts network call.
 - **@astrojs/sitemap** for `sitemap-index.xml`.
-- **Supabase Auth** + a single on-demand endpoint (via the **@astrojs/netlify** adapter) for the university verification gate. Every other page is fully static.
+- **Supabase Auth** + a single on-demand endpoint (via the **@astrojs/vercel** adapter) for the university verification gate. Every other page is fully static.
 
 ## University verification
 
@@ -37,7 +37,7 @@ npx astro check    # type-check (currently 0 errors)
 
 ### Set the production domain
 
-Canonical URLs, the sitemap, and absolute OG image URLs all derive from `site` in [`astro.config.mjs`](astro.config.mjs). It is currently set to a placeholder (`https://the-pipeline.netlify.app`). Update it to the real domain, and update the `Sitemap:` line in [`public/robots.txt`](public/robots.txt) to match.
+Canonical URLs, the sitemap, and absolute OG image URLs all derive from `site` in [`astro.config.mjs`](astro.config.mjs). It is currently set to a placeholder (`https://the-pipeline.vercel.app`). Update it to the real domain, and update the `Sitemap:` line in [`public/robots.txt`](public/robots.txt) to match.
 
 ## Project structure
 
@@ -82,7 +82,7 @@ python scripts/make-og.py
 
 The build is static, so it hosts anywhere.
 
-- **Netlify (recommended):** connect the repo. Astro is auto-detected and the `@astrojs/netlify` adapter turns the verification endpoint into a function; `netlify.toml` pins the rest. Add the three environment variables from [SETUP-VERIFICATION.md](SETUP-VERIFICATION.md) under Site settings, Environment variables.
-- **Other hosts:** the verification endpoint needs a server runtime, so swap the adapter (e.g. `@astrojs/vercel`) if you leave Netlify. Everything else is static.
+- **Vercel (current setup):** import the GitHub repo at vercel.com. Astro is auto-detected and the `@astrojs/vercel` adapter turns the verification endpoint into a serverless function. Add the three environment variables from [SETUP-VERIFICATION.md](SETUP-VERIFICATION.md) under Project Settings, Environment Variables.
+- **Other hosts:** the verification endpoint needs a server runtime, so swap the adapter (e.g. `@astrojs/netlify`) if you move off Vercel. Everything else is static.
 
 After deploying, set the real domain in `astro.config.mjs` (`site`) and `public/robots.txt`, then confirm every internal link and the Join buttons resolve, and that Lighthouse is >=95.

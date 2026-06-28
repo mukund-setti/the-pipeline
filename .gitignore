@@ -22,8 +22,8 @@ Thumbs.db
 .vscode/
 .idea/
 
-# netlify
-.netlify/
+# vercel
+.vercel/
 
 # Lovable reference (kept locally only; the zip bundles another project's .env)
 LovableUI/

@@ -1,0 +1,20 @@
+{
+	"geolocation": {
+		"data": {
+			"city": "Frisco",
+			"country": {
+				"code": "US",
+				"name": "United States"
+			},
+			"subdivision": {
+				"code": "TX",
+				"name": "Texas"
+			},
+			"timezone": "America/Chicago",
+			"latitude": 33.1494,
+			"longitude": -96.828,
+			"postalCode": "75034"
+		},
+		"timestamp": 1782600397201
+	}
+}

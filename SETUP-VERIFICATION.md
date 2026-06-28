@@ -26,7 +26,7 @@ Supabase's Email provider is on by default. One thing to check so it sends a **c
 
 Supabase, Authentication, URL Configuration:
 
-- Site URL: your production URL (e.g. https://the-pipeline.netlify.app).
+- Site URL: your production URL (e.g. https://the-pipeline.vercel.app).
 - Redirect URLs: add `https://YOUR-DOMAIN/join` and, for local dev, `http://localhost:4321/join`.
 
 ## 5. Environment variables
@@ -36,7 +36,7 @@ Local: copy `.env.example` to `.env` and fill in:
 - `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` (from step 1)
 - `DISCORD_INVITE_URL` (already set to your invite)
 
-Netlify: Site settings, Environment variables, add the same three.
+Vercel: Project Settings, Environment Variables, add the same three.
 
 ## 6. Partner universities
 
