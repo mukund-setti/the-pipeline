@@ -166,7 +166,12 @@ const SUBLINK = 'font-mono text-[0.72rem] uppercase tracking-[0.08em]';
         const { data } = await client.auth.getSession();
         const res = await fetch('/api/discord-invite', {
           method: 'POST',
-          headers: { Authorization: `Bearer ${data.session?.access_token}` },
+          // Explicit JSON content-type so Astro's CSRF guard doesn't treat this
+          // (header-only) POST as a cross-site form submission and 403 it.
+          headers: {
+            Authorization: `Bearer ${data.session?.access_token}`,
+            'Content-Type': 'application/json',
+          },
         });
         const body = await res.json().catch(() => ({}));
         if (res.ok && body.invite) {
