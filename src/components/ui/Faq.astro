@@ -8,6 +8,6 @@ interface Props {
 }
 const { items = defaultFaq, class: className = '' } = Astro.props;
 ---
-<div class:list={['max-w-[760px] border-2 border-line bg-surface px-6', className]}>
+<div class:list={['max-w-[760px] rounded-panel border border-line bg-surface px-7', className]}>
   {items.map((f) => <FaqItem q={f.q} a={f.a} />)}
 </div>

@@ -3,8 +3,8 @@ import Eyebrow from './Eyebrow.astro';
 import VerifyGate from './VerifyGate.astro';
 import { links } from '../../data/site';
 ---
-<div class="relative overflow-hidden border-2 border-line bg-surface px-[clamp(28px,5vw,56px)] py-12">
-  <div aria-hidden="true" class="absolute inset-x-0 top-0 h-[3px] bg-signal"></div>
+<div class="relative overflow-hidden rounded-panel border border-line bg-surface px-[clamp(28px,5vw,56px)] py-12">
+  <div aria-hidden="true" class="absolute inset-x-0 top-0 h-[4px] bg-gradient-to-r from-gold-bright via-gold to-gold-deep"></div>
   <Eyebrow>Verify your .edu</Eyebrow>
   <h2 class="mb-2.5 mt-4 font-display text-[clamp(1.8rem,4vw,2.6rem)] font-semibold tracking-tight text-ink">
     Start here.
@@ -16,7 +16,7 @@ import { links } from '../../data/site';
 
   <VerifyGate formUrl={links.form} />
 
-  <div class="mt-7 border-t-2 border-line pt-6 font-mono text-[0.82rem] tracking-[0.03em] text-ink-soft">
+  <div class="mt-7 border-t border-line pt-6 text-[0.9rem] text-ink-soft">
     Recruiting, or want to partner with us?{' '}
     <a href={links.contact} class="font-medium text-ink underline-offset-4 hover:underline"
       >Get in touch &rarr;</a

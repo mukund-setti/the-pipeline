@@ -1,24 +1,40 @@
 ---
 /**
- * The signature animated rail: a dashed ink current flowing toward a raw red
- * arrival marker on the right. Decorative, so aria-hidden.
+ * The signature rail: a warm dotted path flowing toward a glowing gold
+ * arrival sun on the right. Decorative, so aria-hidden.
  */
 interface Props {
   notes?: boolean;
+  tone?: 'light' | 'dark';
   class?: string;
 }
-const { notes = false, class: className = '' } = Astro.props;
+const { notes = false, tone = 'light', class: className = '' } = Astro.props;
 ---
 <div class:list={['relative', className]} aria-hidden="true">
-  <div class="relative h-2 overflow-hidden bg-brand-soft">
-    <div class="conduit-current animate-flow absolute inset-0 opacity-90"></div>
-    <div class="conduit-tip absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2"></div>
+  <div
+    class:list={[
+      'relative h-2 overflow-hidden rounded-pill',
+      tone === 'dark' ? 'bg-white/5' : 'bg-brand-soft/80',
+    ]}
+  >
+    <div
+      class:list={[
+        'animate-flow absolute inset-y-0 -left-[34px] right-0',
+        tone === 'dark' ? 'conduit-current' : 'conduit-current-light',
+      ]}
+    ></div>
   </div>
+  <div class="conduit-tip animate-glow absolute right-0 top-1 h-3.5 w-3.5 -translate-y-1/2"></div>
   {
     notes && (
-      <div class="mt-3 flex justify-between font-mono text-[0.68rem] uppercase tracking-[0.14em] text-ink-soft max-[560px]:text-[0.6rem]">
+      <div
+        class:list={[
+          'label mt-4 flex justify-between text-[0.64rem]',
+          tone === 'dark' ? 'text-ondark-soft' : 'text-ink-soft',
+        ]}
+      >
         <span>Talent in</span>
-        <span>Offers out &darr;</span>
+        <span>Offers out</span>
       </div>
     )
   }

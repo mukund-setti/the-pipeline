@@ -8,14 +8,13 @@ interface Props {
 const { eyebrow, title } = Astro.props;
 ---
 <div
-  class="on-ink relative overflow-hidden bg-ink px-[clamp(28px,5vw,64px)] py-[clamp(44px,5vw,64px)] text-ondark"
+  class="on-ink relative overflow-hidden rounded-panel bg-canopy px-[clamp(28px,5vw,64px)] py-[clamp(44px,5vw,64px)] text-ondark"
 >
-  <div aria-hidden="true" class="grid-ink absolute inset-0 opacity-40"></div>
-  <div aria-hidden="true" class="absolute inset-x-0 top-0 h-[3px] bg-signal"></div>
+  <div aria-hidden="true" class="light-shaft"></div>
   <div class="relative">
     <Eyebrow tone="onDark">{eyebrow}</Eyebrow>
-    <h2 class="mb-4 mt-4 font-display text-h2 font-semibold tracking-tight text-white">{title}</h2>
-    <p class="mb-7 max-w-[52ch] text-ondark-soft [&_b]:font-semibold [&_b]:text-white">
+    <h2 class="mb-4 mt-4 font-display text-h2 font-semibold tracking-tight text-ondark">{title}</h2>
+    <p class="mb-7 max-w-[52ch] text-ondark-soft [&_b]:font-semibold [&_b]:text-ondark">
       <slot name="body" />
     </p>
     <div class="flex flex-wrap items-center gap-3">

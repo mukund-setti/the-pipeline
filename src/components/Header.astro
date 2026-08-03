@@ -9,19 +9,19 @@ const isActive = (href: string) => {
 };
 ---
 <header
-  class="sticky top-0 z-50 border-b-2 border-line bg-bg/95 backdrop-blur supports-[backdrop-filter]:bg-bg/85"
+  class="on-ink sticky top-0 z-50 border-b border-line-dark bg-canopy/95 text-ondark backdrop-blur supports-[backdrop-filter]:bg-canopy/85"
 >
   <div class="wrap">
     <nav
-      class="flex h-16 items-center justify-between gap-4 max-[620px]:h-auto max-[620px]:flex-wrap max-[620px]:py-3"
+      class="flex h-[68px] items-center justify-between gap-4 max-[620px]:h-auto max-[620px]:flex-wrap max-[620px]:py-3"
       aria-label="Primary"
     >
       <a
         href="/"
-        class="inline-flex items-center gap-2.5 font-display text-[1.05rem] font-semibold tracking-tight"
+        class="inline-flex items-center gap-3 font-display text-[1.1rem] font-semibold tracking-tight text-ondark"
         aria-label="The Pipeline, home"
       >
-        <Mark size={32} />
+        <Mark size={34} />
         The Pipeline
       </a>
 
@@ -32,20 +32,20 @@ const isActive = (href: string) => {
               href={item.href}
               class:list={[
                 'relative px-3.5 py-2 text-[14px] transition-colors',
-                isActive(item.href) ? 'text-ink' : 'text-ink-soft hover:text-ink',
+                isActive(item.href) ? 'text-ondark' : 'text-ondark-soft hover:text-ondark',
               ]}
               aria-current={isActive(item.href) ? 'page' : undefined}
             >
               {item.label}
               {isActive(item.href) && (
-                <span aria-hidden="true" class="absolute inset-x-3.5 -bottom-px h-0.5 bg-ink" />
+                <span aria-hidden="true" class="absolute inset-x-3.5 bottom-0 h-0.5 rounded-full bg-gold" />
               )}
             </a>
           ))
         }
         <a
           href={navCta.href}
-          class="ml-2 inline-flex h-9 items-center border-2 border-transparent bg-brand px-4 text-[14px] font-medium text-white transition-colors hover:bg-brand-deep"
+          class="lift-sm ml-2 inline-flex h-9 items-center rounded-pill bg-gold-bright px-5 text-[14px] font-semibold text-canopy transition-colors hover:bg-gold-pale"
           aria-current={isActive(navCta.href) ? 'page' : undefined}
         >
           {navCta.label}

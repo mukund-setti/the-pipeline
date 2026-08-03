@@ -13,7 +13,7 @@ export const site = {
   title: 'The Pipeline',
   location: 'University of California',
   established: '2026',
-  themeColor: '#111111', // keep in sync with ink.DEFAULT in tailwind.config.ts (a <meta> needs a literal)
+  themeColor: '#0F1912', // keep in sync with canopy.DEFAULT in tailwind.config.ts (a <meta> needs a literal)
   /** Default meta description (homepage + OG fallback). */
   description:
     'A fellow-run community across the UC system moving underrepresented undergrads in tech into the rooms they were kept out of, through gatekept job drops, resume reviews, and mock interviews run by people who have already landed.',
@@ -222,6 +222,8 @@ export const expectations: string[] = [
 export const voice = {
   thesis: 'The talent was never the problem.',
   thesisTail: 'They called us the pipeline problem. We decided to be the pipeline.',
+  /** Brand tagline; "Together." is appended in gold where it renders. */
+  tagline: 'Building. Growing. Learning.',
 } as const;
 
 export const footer = {

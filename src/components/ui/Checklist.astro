@@ -10,7 +10,7 @@ const { items, class: className = '' } = Astro.props;
   {
     items.map((item) => (
       <li class="flex gap-3.5 [&_b]:font-semibold [&_b]:text-ink">
-        <span class="mt-1 flex-none font-mono text-signal" aria-hidden="true">
+        <span class="mt-1 flex-none text-signal" aria-hidden="true">
           &rarr;
         </span>
         <span class="text-[15.5px] leading-relaxed text-ink-soft">

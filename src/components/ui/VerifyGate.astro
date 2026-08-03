@@ -13,13 +13,13 @@ interface Props {
 const { formUrl } = Astro.props;
 
 const PRIMARY =
-  'inline-flex w-full items-center justify-center gap-2.5 border-2 border-transparent bg-brand px-6 py-3.5 font-sans text-base font-semibold text-white transition-colors hover:bg-brand-deep';
+  'inline-flex w-full items-center justify-center gap-2.5 rounded-pill border border-transparent bg-gold-bright px-6 py-3.5 font-sans text-base font-semibold text-canopy transition-colors hover:bg-gold-pale';
 const GHOST =
-  'inline-flex w-full items-center justify-center gap-2.5 border-2 border-line bg-transparent px-6 py-3.5 font-sans text-base font-semibold text-ink transition-colors hover:bg-brand-soft';
+  'inline-flex w-full items-center justify-center gap-2.5 rounded-pill border border-line-strong bg-transparent px-6 py-3.5 font-sans text-base font-semibold text-ink transition-colors hover:border-ink hover:bg-brand-soft/60';
 const INPUT =
-  'w-full border-2 border-line bg-bg px-4 py-3 font-sans text-base text-ink outline-none transition-colors placeholder:text-ink-soft/60 focus:border-ink';
-const LABEL = 'mb-1.5 block font-mono text-[0.7rem] uppercase tracking-[0.1em] text-ink-soft';
-const SUBLINK = 'font-mono text-[0.72rem] uppercase tracking-[0.08em]';
+  'w-full rounded-field border border-line-strong bg-surface px-4 py-3 font-sans text-base text-ink outline-none transition-colors placeholder:text-ink-soft/60 focus:border-gold-deep';
+const LABEL = 'label mb-1.5 block text-[0.68rem] text-ink-soft';
+const SUBLINK = 'label text-[0.7rem]';
 ---
 <div data-vg-root class="max-w-[440px]">
   {/* choose */}
@@ -34,7 +34,7 @@ const SUBLINK = 'font-mono text-[0.72rem] uppercase tracking-[0.08em]';
       Continue with your university Google
     </button>
 
-    <div class="my-5 flex items-center gap-3 font-mono text-[0.68rem] uppercase tracking-[0.14em] text-ink-soft">
+    <div class="label my-5 flex items-center gap-3 text-[0.66rem] text-ink-soft">
       <span class="h-px flex-1 bg-line"></span>or<span class="h-px flex-1 bg-line"></span>
     </div>
 
@@ -44,14 +44,14 @@ const SUBLINK = 'font-mono text-[0.72rem] uppercase tracking-[0.08em]';
       <button type="submit" class={`${GHOST} mt-3`}>Email me a sign-in link</button>
     </form>
 
-    <p class="mt-4 font-mono text-[0.72rem] leading-relaxed text-ink-soft">
+    <p class="mt-4 text-[0.82rem] leading-relaxed text-ink-soft">
       Open to UC students for now. We only ever email your sign-in link.
     </p>
   </section>
 
   {/* linkSent */}
   <section data-vg="codeSent" hidden>
-    <div class="mb-2 font-display text-[1.4rem] font-extrabold text-ink">Check your email.</div>
+    <div class="mb-2 font-display text-[1.4rem] font-semibold text-ink">Check your email.</div>
     <p class="mb-5 text-ink-soft">
       We sent a sign-in link to <span class="font-semibold text-ink" data-vg-email></span>. Open it
       from your inbox to verify and get in. It can take a minute; check spam too.
@@ -66,19 +66,19 @@ const SUBLINK = 'font-mono text-[0.72rem] uppercase tracking-[0.08em]';
   <section data-vg="busy" hidden>
     <div class="flex items-center gap-3 py-2 text-ink-soft" aria-live="polite">
       <span class="h-4 w-4 animate-spin rounded-full border-2 border-ink/20 border-t-signal"></span>
-      <span class="font-mono text-[0.8rem] uppercase tracking-[0.1em]" data-vg-busy>Working</span>
+      <span class="label text-[0.72rem]" data-vg-busy>Working</span>
     </div>
   </section>
 
   {/* verified */}
   <section data-vg="verified" hidden>
     <div class="mb-2 flex items-center gap-2.5">
-      <span class="flex h-7 w-7 flex-none items-center justify-center bg-signal">
-        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <span class="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-gold-bright text-canopy">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M5 13l4 4L19 7"></path>
         </svg>
       </span>
-      <span class="font-display text-[1.4rem] font-extrabold text-ink">You're in. Welcome to The Pipeline.</span>
+      <span class="font-display text-[1.4rem] font-semibold text-ink">You're in. Welcome to The Pipeline.</span>
     </div>
     <p class="mb-5 text-ink-soft">
       Verified as <span class="font-semibold text-ink" data-vg-email></span>. The job drops, office
@@ -97,7 +97,7 @@ const SUBLINK = 'font-mono text-[0.72rem] uppercase tracking-[0.08em]';
 
   {/* blocked */}
   <section data-vg="blocked" hidden>
-    <div class="mb-2 font-display text-[1.4rem] font-extrabold text-ink">
+    <div class="mb-2 font-display text-[1.4rem] font-semibold text-ink">
       Almost. We're not at your campus yet.
     </div>
     <p class="mb-5 text-ink-soft">
@@ -114,7 +114,7 @@ const SUBLINK = 'font-mono text-[0.72rem] uppercase tracking-[0.08em]';
     </button>
   </section>
 
-  <p data-vg-note class="mt-3 font-mono text-[0.75rem] text-ink-soft" aria-live="polite" hidden></p>
+  <p data-vg-note class="mt-3 text-[0.85rem] text-ink-soft" aria-live="polite" hidden></p>
 </div>
 
 <script>

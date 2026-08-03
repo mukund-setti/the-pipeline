@@ -23,12 +23,12 @@ export default function DropFeed({ placements }: { placements: Placement[] }) {
     <>
       {placements.map((p, i) => (
         <span key={`${hidden ? 'b' : 'a'}-${i}`} className="inline-flex items-center gap-9" aria-hidden={hidden || undefined}>
-          <span className="inline-flex items-baseline gap-3 font-mono">
-            <span className="h-2 w-2 flex-none translate-y-[5px] bg-signal" />
-            <span className="text-[1.18rem] font-semibold tracking-[-0.01em] text-white">{p.org}</span>
-            <span className="text-[0.72rem] uppercase tracking-[0.1em] text-ondark-soft">{p.role}</span>
+          <span className="inline-flex items-baseline gap-3">
+            <span className="h-2 w-2 flex-none translate-y-[-1px] rounded-full bg-gold" />
+            <span className="font-display text-[1.18rem] font-semibold tracking-tight text-ondark">{p.org}</span>
+            <span className="label text-[0.66rem] text-ondark-soft">{p.role}</span>
           </span>
-          <span className="text-base text-line-dark" aria-hidden="true">/</span>
+          <span className="text-base text-ondark-soft/40" aria-hidden="true">·</span>
         </span>
       ))}
     </>

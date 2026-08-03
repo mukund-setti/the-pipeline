@@ -6,14 +6,14 @@ interface Props {
 }
 const { n, title, body } = Astro.props;
 ---
-<div class="flex items-start gap-5 rounded-[14px] border border-line bg-surface px-6 py-5">
+<div class="flex items-start gap-5 rounded-card border border-line bg-surface px-6 py-5">
   <span
-    class="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-lg bg-brand font-mono text-[0.9rem] font-bold text-white"
+    class="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full bg-brand font-sans text-[0.9rem] font-bold text-gold-pale"
   >
     {n}
   </span>
   <div>
-    <h3 class="font-display text-[1.2rem] font-bold text-ink">{title}</h3>
+    <h3 class="font-display text-[1.2rem] font-semibold text-ink">{title}</h3>
     <p class="mt-1.5 text-[0.98rem] text-ink-soft">{body}</p>
   </div>
 </div>

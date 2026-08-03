@@ -17,8 +17,8 @@ import { site, hero, placements, stages } from '../data/site';
   ogTitle="The Pipeline · Across the UC system"
   ogDescription={site.ogDescription}
 >
-  {/* ── Hero ─────────────────────────────────────────────── */}
-  <section class="relative overflow-hidden pt-[92px] max-[560px]:pt-14">
+  {/* ── Hero: under the canopy ───────────────────────────── */}
+  <section class="on-ink relative overflow-hidden bg-canopy pb-24 pt-[88px] text-ondark max-[560px]:pb-16 max-[560px]:pt-14">
     <div aria-hidden="true" class="pointer-events-none absolute inset-0">
       <img
         src="/img/hero-students.webp"
@@ -27,23 +27,23 @@ import { site, hero, placements, stages } from '../data/site';
         height="1208"
         decoding="async"
         fetchpriority="low"
-        class="absolute inset-y-0 right-0 h-full w-full object-cover object-center opacity-20 md:w-[62%] md:opacity-55"
+        class="absolute inset-y-0 right-0 h-full w-full object-cover object-center opacity-15 md:w-[62%] md:opacity-40"
       />
       <div class="photo-wash-right absolute inset-0 hidden md:block"></div>
-      <div class="absolute inset-0 bg-bg/75 md:hidden"></div>
-      <div class="absolute inset-y-0 right-0 hidden w-[3px] bg-signal/40 md:block"></div>
+      <div class="absolute inset-0 bg-canopy/80 md:hidden"></div>
+      <div class="light-shaft"></div>
     </div>
 
     <div class="wrap relative">
-      <Eyebrow class="animate-riseIn flex" as="div">{hero.eyebrow}</Eyebrow>
+      <Eyebrow tone="onDark" class="animate-riseIn flex" as="div">{hero.eyebrow}</Eyebrow>
       <h1
-        class="animate-riseIn mb-[26px] mt-[26px] max-w-[16ch] font-display text-hero font-semibold tracking-tight text-ink"
+        class="animate-riseIn mb-[26px] mt-[26px] max-w-[17ch] font-display text-hero font-semibold tracking-tight text-ondark"
         style="animation-delay:80ms"
       >
-        We don't fix the pipeline. We <span class="hl">are</span> the pipeline.
+        We don't fix the pipeline. We <span class="hl-gold">are</span> the pipeline.
       </h1>
       <p
-        class="animate-riseIn mb-[34px] max-w-[54ch] text-lede text-ink-soft [&_b]:font-semibold [&_b]:text-ink"
+        class="animate-riseIn mb-[34px] max-w-[54ch] text-lede text-ondark-soft [&_b]:font-semibold [&_b]:text-ondark"
         style="animation-delay:160ms"
       >
         A fellow-run community across the UC system moving underrepresented <b>undergrads in tech</b>
@@ -52,30 +52,30 @@ import { site, hero, placements, stages } from '../data/site';
       </p>
       <div class="animate-riseIn flex flex-wrap items-center gap-3" style="animation-delay:240ms">
         <Button href="/join/" arrow>Join the Pipeline</Button>
-        <Button href="/how/" variant="ghost">See how it works</Button>
+        <Button href="/how/" variant="ghostDark">See how it works</Button>
       </div>
       <div
-        class="animate-riseIn mt-7 inline-flex items-center gap-2.5 border-2 border-line bg-surface px-4 py-2 font-mono text-[0.72rem] uppercase tracking-wider text-ink-soft"
+        class="label animate-riseIn mt-8 inline-flex items-center gap-2.5 rounded-pill border border-line-dark bg-canopy-2/70 px-4 py-2.5 text-[0.68rem] text-ondark-soft"
         style="animation-delay:300ms"
       >
-        <span class="h-2 w-2 flex-none bg-signal" aria-hidden="true"></span>
+        <span class="h-2 w-2 flex-none rounded-full bg-gold" aria-hidden="true"></span>
         {hero.proof}
       </div>
-      <div class="animate-riseIn mt-14" style="animation-delay:360ms">
-        <Conduit notes />
+      <div class="animate-riseIn mt-16" style="animation-delay:360ms">
+        <Conduit tone="dark" notes />
       </div>
     </div>
   </section>
 
   {/* ── Drop feed ────────────────────────────────────────── */}
-  <section class="on-ink relative overflow-hidden border-y-2 border-line bg-ink py-12 text-ondark">
-    <div aria-hidden="true" class="grid-ink absolute inset-0 opacity-30"></div>
+  <section class="on-ink relative overflow-hidden border-y border-line-dark bg-canopy-2 py-12 text-ondark">
+    <div aria-hidden="true" class="light-shaft-soft"></div>
     <div class="wrap relative">
       <div class="mb-6 flex items-end justify-between gap-4">
         <Eyebrow tone="onDark">Where our fellows have landed</Eyebrow>
         <a
           href="/outcomes/"
-          class="hidden font-mono text-[0.74rem] uppercase tracking-wider text-ondark-link transition-colors hover:text-white md:inline"
+          class="label hidden text-[0.7rem] text-gold transition-colors hover:text-gold-pale md:inline"
         >
           See all outcomes &rarr;
         </a>
@@ -84,11 +84,7 @@ import { site, hero, placements, stages } from '../data/site';
     <DropFeed placements={placements} client:visible />
     <div class="wrap relative">
       <div class="mt-6 md:hidden">
-        <a
-          href="/outcomes/"
-          class="font-mono text-[0.74rem] uppercase tracking-wider text-ondark-link"
-          >See all outcomes &rarr;</a
-        >
+        <a href="/outcomes/" class="label text-[0.7rem] text-gold">See all outcomes &rarr;</a>
       </div>
     </div>
   </section>
@@ -124,7 +120,7 @@ import { site, hero, placements, stages } from '../data/site';
   </section>
 
   {/* ── Mission (teaser) ─────────────────────────────────── */}
-  <section class="on-ink relative overflow-hidden bg-ink py-24 text-ondark">
+  <section class="on-ink relative overflow-hidden bg-canopy py-24 text-ondark">
     <img
       src="/img/mission-students.webp"
       alt=""
@@ -133,21 +129,21 @@ import { site, hero, placements, stages } from '../data/site';
       decoding="async"
       width="1600"
       height="1104"
-      class="absolute inset-0 h-full w-full object-cover opacity-20"
+      class="absolute inset-0 h-full w-full object-cover opacity-15"
     />
     <div aria-hidden="true" class="photo-wash-ink absolute inset-0"></div>
-    <div aria-hidden="true" class="grid-ink absolute inset-0 opacity-40"></div>
+    <div aria-hidden="true" class="light-shaft"></div>
     <div class="wrap relative">
       <ScrollReveal client:visible>
         <div class="mx-auto max-w-3xl text-center">
           <Eyebrow tone="onDark" class="justify-center">Why we exist</Eyebrow>
           <h2
-            class="mx-auto mt-5 max-w-[18ch] font-display text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.04] tracking-tight text-white"
+            class="mx-auto mt-5 max-w-[20ch] font-display text-[clamp(2rem,5vw,3.4rem)] font-semibold leading-[1.08] tracking-tight text-ondark"
           >
-            The talent was <span class="text-signal">never</span> the problem.
+            The talent was <span class="hl-gold">never</span> the problem.
           </h2>
           <p
-            class="mx-auto mt-6 max-w-[58ch] text-[clamp(1.05rem,1.7vw,1.3rem)] leading-relaxed text-ondark-soft [&_b]:font-semibold [&_b]:text-white"
+            class="mx-auto mt-6 max-w-[58ch] text-[clamp(1.05rem,1.7vw,1.3rem)] leading-relaxed text-ondark-soft [&_b]:font-semibold [&_b]:text-ondark"
           >
             People call it the "pipeline problem", as if the talent is not out there. It is. What is
             gatekept is <b>access</b>. The Pipeline hands that access to the people who have been

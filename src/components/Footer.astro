@@ -1,19 +1,25 @@
 ---
 import Mark from './ui/Mark.astro';
-import { nav, navCta, footer } from '../data/site';
+import { nav, navCta, footer, voice } from '../data/site';
 
 const footNav = [{ label: 'Home', href: '/' }, ...nav, navCta];
 ---
-<footer class="on-ink relative overflow-hidden border-t-2 border-line bg-ink py-16 text-ondark">
-  <div aria-hidden="true" class="grid-ink absolute inset-0 opacity-50"></div>
+<footer class="on-ink relative overflow-hidden border-t border-line-dark bg-canopy py-16 text-ondark">
+  <div aria-hidden="true" class="light-shaft-soft"></div>
   <div class="wrap relative">
+    {/* The banner tagline, signed off in gold. */}
+    <p class="mb-14 max-w-[22ch] font-display text-[clamp(1.7rem,3.6vw,2.6rem)] font-semibold leading-[1.15] tracking-tight text-ondark">
+      {voice.tagline}
+      <span class="hl-gold">Together.</span>
+    </p>
+
     <div class="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
       <div>
         <a
           href="/"
-          class="inline-flex items-center gap-2.5 font-display text-[1.15rem] font-semibold text-white"
+          class="inline-flex items-center gap-3 font-display text-[1.15rem] font-semibold text-ondark"
         >
-          <Mark size={32} />
+          <Mark size={34} />
           The Pipeline
         </a>
         <p class="mt-5 max-w-sm text-[14px] leading-relaxed text-ondark-soft">
@@ -23,7 +29,7 @@ const footNav = [{ label: 'Home', href: '/' }, ...nav, navCta];
       <nav class="grid grid-cols-2 gap-x-12 gap-y-3 text-[14px]" aria-label="Footer">
         {
           footNav.map((item) => (
-            <a href={item.href} class="text-ondark-soft transition-colors hover:text-white">
+            <a href={item.href} class="text-ondark-soft transition-colors hover:text-gold">
               {item.label}
             </a>
           ))
@@ -31,7 +37,7 @@ const footNav = [{ label: 'Home', href: '/' }, ...nav, navCta];
       </nav>
     </div>
     <div
-      class="mt-12 flex flex-col gap-2 border-t border-line-dark pt-6 font-mono text-[0.72rem] uppercase tracking-[0.18em] text-ondark-soft md:flex-row md:items-center md:justify-between"
+      class="label mt-12 flex flex-col gap-2 border-t border-line-dark pt-6 text-[0.7rem] text-ondark-soft md:flex-row md:items-center md:justify-between"
     >
       <span>{footer.builtBy}</span>
       <span>{footer.copyright}</span>

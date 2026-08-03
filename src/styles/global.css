@@ -4,9 +4,9 @@
 
 /* ============================================================
    THE PIPELINE: base layer
-   Design system: "Blueprint & Signal" (raw / brutalist cut)
+   Design system: "Canopy & Light" (forest, warmth, gold sun)
    Tokens live in tailwind.config.ts. This file is base styles,
-   the structural grid, focus, and reduced-motion only.
+   organic texture, light effects, focus, and reduced-motion.
    ============================================================ */
 
 @layer base {
@@ -23,25 +23,22 @@
     @apply bg-bg text-ink font-sans antialiased;
     margin: 0;
     font-size: 17px;
-    line-height: 1.6;
+    line-height: 1.65;
     text-rendering: optimizeLegibility;
     overflow-x: hidden;
   }
 
-  /* Structural blueprint grid: black hairlines on a 56px module, fixed,
-     masked to fade out toward the bottom. */
+  /* Organic paper grain over everything, fixed and faint. Reads as warmth,
+     not pattern; sits above backgrounds, below content (content wraps are
+     position:relative). */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    background-image:
-      linear-gradient(to right, rgba(17, 17, 17, 0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(17, 17, 17, 0.05) 1px, transparent 1px);
-    background-size: 56px 56px;
-    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0) 65%);
-    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0) 65%);
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
   }
 
   a {
@@ -50,17 +47,18 @@
   }
 
   ::selection {
-    background: #111111;
-    color: #f5f3ee;
+    background: #2c4434;
+    color: #f2dca4;
   }
 
-  /* Visible focus everywhere: raw red, sharp. */
+  /* Visible focus everywhere: warm gold ring, rounded. */
   :where(a, button, input, summary, [tabindex]):focus-visible {
-    outline: 2px solid theme(colors.signal);
+    outline: 2px solid theme(colors.gold.deep);
     outline-offset: 3px;
+    border-radius: 4px;
   }
   .on-ink :where(a, button, input, summary, [tabindex]):focus-visible {
-    outline-color: theme(colors.ondark.DEFAULT);
+    outline-color: theme(colors.gold.DEFAULT);
   }
 }
 
@@ -70,12 +68,28 @@
     @apply mx-auto w-full max-w-site px-6;
   }
 
-  /* Structural grid over a dark (ink) band. */
-  .grid-ink {
-    background-image:
-      linear-gradient(to right, rgba(245, 243, 238, 0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(245, 243, 238, 0.05) 1px, transparent 1px);
-    background-size: 56px 56px;
+  /* Small-caps label: the utility voice of the system (replaces the old mono).
+     Used for eyebrows, stage labels, metadata. */
+  .label {
+    @apply font-sans text-eyebrow font-semibold uppercase;
+  }
+
+  /* Sun through canopy: a soft warm shaft of light for dark bands. Give the
+     parent position:relative + overflow-hidden and drop this in. */
+  .light-shaft {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 90% at 78% -10%, rgba(217, 168, 76, 0.28), transparent 60%),
+      radial-gradient(ellipse 40% 60% at 62% -5%, rgba(242, 220, 164, 0.14), transparent 55%),
+      linear-gradient(112deg, transparent 46%, rgba(217, 168, 76, 0.055) 55%, transparent 68%);
+  }
+  .light-shaft-soft {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse 55% 70% at 80% -12%, rgba(217, 168, 76, 0.16), transparent 62%);
   }
 
   /* Skip link, visible only on focus. */
@@ -83,19 +97,20 @@
     @apply sr-only;
   }
   .skip-link:focus {
-    @apply not-sr-only fixed left-4 top-4 z-[100] border-2 border-signal bg-ink px-5 py-2 font-mono text-sm font-medium text-white;
+    @apply not-sr-only fixed left-4 top-4 z-[100] rounded-pill bg-canopy px-5 py-2 text-sm font-semibold text-gold;
   }
 
   /* Hover lift for cards (3px) and buttons (1px). Centralized so reduced
-     motion can switch all of them off at once. Borders over shadows. */
+     motion can switch all of them off at once. */
   .lift {
-    @apply transition-[transform,border-color] duration-150;
+    @apply transition-[transform,border-color,box-shadow] duration-200;
   }
   .lift:hover {
     transform: translateY(-3px);
+    box-shadow: 0 14px 30px -18px rgba(34, 43, 32, 0.35);
   }
   .lift-sm {
-    @apply transition-[transform,background-color,border-color,color] duration-150;
+    @apply transition-[transform,background-color,border-color,color,box-shadow] duration-200;
   }
   .lift-sm:hover {
     transform: translateY(-1px);
@@ -103,36 +118,42 @@
 
   /* Arrow glyph nudge on hover of a `.group` parent. */
   .nudge {
-    @apply transition-transform duration-150;
+    @apply transition-transform duration-200;
   }
   .group:hover .nudge {
     transform: translateX(3px);
   }
 
-  /* Hero highlight: ink text with a raw red "arrival" underline bar. Keeping
-     the text ink preserves AA contrast on the warm paper. */
+  /* Golden word: the banner's "Together." treatment. A warm gradient fill on
+     a display-italic word inside a heading. */
+  .hl-gold {
+    background-image: linear-gradient(100deg, theme(colors.gold.deep) 0%, theme(colors.gold.DEFAULT) 45%, theme(colors.gold.pale) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-style: italic;
+  }
+  /* On daylight sections gold needs to stay deep to hold contrast. */
   .hl {
-    color: theme(colors.ink.DEFAULT);
-    background-image: linear-gradient(theme(colors.signal), theme(colors.signal));
-    background-repeat: no-repeat;
-    background-position: 0 92%;
-    background-size: 100% 0.14em;
-    white-space: nowrap;
+    color: theme(colors.gold.deep);
+    font-style: italic;
   }
 
-  /* Signature conduit: dashed ink current flowing to a raw red arrival tip. */
+  /* Signature conduit: a warm dotted path flowing toward a glowing gold
+     arrival sun on the right. */
   .conduit-current {
-    background: repeating-linear-gradient(
-      90deg,
-      transparent 0,
-      transparent 14px,
-      theme(colors.ink.DEFAULT) 14px,
-      theme(colors.ink.DEFAULT) 30px
-    );
+    background-image: radial-gradient(circle 3.5px at 8px 50%, theme(colors.gold.DEFAULT) 92%, transparent);
+    background-size: 34px 100%;
+    background-repeat: repeat-x;
+  }
+  .conduit-current-light {
+    background-image: radial-gradient(circle 3.5px at 8px 50%, theme(colors.gold.deep) 92%, transparent);
+    background-size: 34px 100%;
+    background-repeat: repeat-x;
   }
   .conduit-tip {
-    background: theme(colors.signal);
-    box-shadow: 0 0 0 5px rgba(255, 42, 42, 0.2);
+    background: theme(colors.gold.bright);
+    border-radius: 999px;
   }
 
   /* Edge fade for the drop-feed marquee. */
@@ -145,18 +166,18 @@
   .photo-wash-right {
     background: linear-gradient(
       to right,
-      theme(colors.bg) 0%,
-      theme(colors.bg) 38%,
-      color-mix(in oklab, theme(colors.bg) 70%, transparent) 62%,
-      color-mix(in oklab, theme(colors.bg) 30%, transparent) 100%
+      theme(colors.canopy.DEFAULT) 0%,
+      theme(colors.canopy.DEFAULT) 34%,
+      color-mix(in oklab, theme(colors.canopy.DEFAULT) 72%, transparent) 62%,
+      color-mix(in oklab, theme(colors.canopy.DEFAULT) 34%, transparent) 100%
     );
   }
   .photo-wash-ink {
     background: linear-gradient(
       to bottom,
-      theme(colors.ink.DEFAULT) 0%,
-      color-mix(in oklab, theme(colors.ink.DEFAULT) 55%, transparent) 50%,
-      theme(colors.ink.DEFAULT) 100%
+      theme(colors.canopy.DEFAULT) 0%,
+      color-mix(in oklab, theme(colors.canopy.DEFAULT) 58%, transparent) 50%,
+      theme(colors.canopy.DEFAULT) 100%
     );
   }
   .photo-wash-paper {
@@ -189,7 +210,8 @@
 
   .animate-flow,
   .animate-marquee,
-  .animate-riseIn {
+  .animate-riseIn,
+  .animate-glow {
     animation: none !important;
   }
 

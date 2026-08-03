@@ -4,15 +4,15 @@ interface Props {
   label: string;
   title: string;
   body: string;
-  /** Unused in the brutalist cut; kept so callers don't break. */
+  /** Unused in this cut; kept so callers don't break. */
   showPipe?: boolean;
 }
 const { num, label, title, body } = Astro.props;
 ---
-<article class="lift group flex h-full flex-col gap-4 border-2 border-line bg-surface p-7">
+<article class="lift group flex h-full flex-col gap-4 rounded-card border border-line bg-surface p-7">
   <div class="flex items-center justify-between">
-    <span class="font-mono text-[0.82rem] font-bold tracking-wider text-ink">{num}</span>
-    <span class="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-ink-soft">{label}</span>
+    <span class="font-display text-[1.05rem] font-semibold italic text-gold-deep">{num}</span>
+    <span class="label text-[0.64rem] text-ink-soft">{label}</span>
   </div>
   <h3 class="font-display text-h3-lg font-semibold leading-tight text-ink">{title}</h3>
   <p class="text-[0.98rem] text-ink-soft">{body}</p>

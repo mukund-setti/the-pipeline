@@ -2,13 +2,13 @@
 interface Props {
   num: string;
   cap: string;
-  /** A win/arrival stat: the number takes the raw red signal. */
+  /** A win/arrival stat: the number takes the sunlight gold. */
   win?: boolean;
 }
 const { num, cap, win = false } = Astro.props;
 ---
-<div class="bg-surface p-7">
-  <div class="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-ink-soft">{cap}</div>
+<div class="bg-surface p-7 max-[560px]:p-5">
+  <div class="label text-[0.64rem] text-ink-soft">{cap}</div>
   <div class:list={['mt-3 font-display text-stat font-semibold', win ? 'text-signal' : 'text-ink']}>
     {num}
   </div>

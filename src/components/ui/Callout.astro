@@ -7,7 +7,7 @@ interface Props {
 }
 const { eyebrow, title } = Astro.props;
 ---
-<div class="border-2 border-line bg-brand-soft px-[clamp(26px,4vw,44px)] py-10">
+<div class="rounded-panel border border-line bg-brand-soft/70 px-[clamp(26px,4vw,44px)] py-10">
   <Eyebrow tone="deep">{eyebrow}</Eyebrow>
   <h2 class="mb-3 mt-4 font-display text-[clamp(1.7rem,3.4vw,2.4rem)] font-semibold tracking-tight text-ink">
     {title}

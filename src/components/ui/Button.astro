@@ -1,7 +1,7 @@
 ---
 /**
- * Sharp brutalist button. primary = ink fill / ghost = 2px black border /
- * ghostDark = on ink. Renders an <a> when `href` is set, else a <button>.
+ * Warm pill button. primary = sunlit gold fill / ghost = soft moss border /
+ * ghostDark = on canopy. Renders an <a> when `href` is set, else a <button>.
  */
 interface Props {
   href?: string;
@@ -24,11 +24,11 @@ const {
 } = Astro.props;
 
 const base =
-  'lift-sm group inline-flex items-center justify-center gap-2.5 border-2 px-6 py-3.5 font-sans text-base font-semibold';
+  'lift-sm group inline-flex items-center justify-center gap-2.5 rounded-pill border px-7 py-3.5 font-sans text-base font-semibold';
 const variants = {
-  primary: 'border-transparent bg-brand text-white hover:bg-brand-deep',
-  ghost: 'border-line bg-transparent text-ink hover:bg-brand-soft',
-  ghostDark: 'border-white/25 bg-transparent text-white hover:border-white/60',
+  primary: 'border-transparent bg-gold-bright text-canopy hover:bg-gold-pale',
+  ghost: 'border-line-strong bg-transparent text-ink hover:border-ink hover:bg-brand-soft/60',
+  ghostDark: 'border-white/25 bg-transparent text-ondark hover:border-gold/60 hover:text-gold-pale',
 };
 const cls = [base, variants[variant], className].join(' ');
 const extra = external ? { target: '_blank', rel: 'noopener' } : {};

@@ -8,10 +8,12 @@ interface Props {
 }
 const { icon, title, body } = Astro.props;
 ---
-<article class="lift group flex h-full flex-col gap-4 border-2 border-line bg-surface p-6">
-  <div class="flex h-11 w-11 items-center justify-center border-2 border-line bg-brand-soft text-ink">
+<article class="lift group flex h-full flex-col gap-4 rounded-card border border-line bg-surface p-6">
+  <div
+    class="flex h-11 w-11 items-center justify-center rounded-full bg-gold-pale/45 text-gold-deep ring-1 ring-gold/40"
+  >
     <Icon name={icon} class="h-5 w-5" />
   </div>
-  <h3 class="font-display text-[1.18rem] font-semibold leading-tight text-ink">{title}</h3>
+  <h3 class="font-display text-[1.16rem] font-semibold leading-tight text-ink">{title}</h3>
   <p class="text-[0.95rem] text-ink-soft">{body}</p>
 </article>
