@@ -1,5 +1,5 @@
 /**
- * Generate public/og.png, the 1200x630 "Canopy & Light" social card.
+ * Generate public/og-canopy.png, the 1200x630 "Canopy & Light" social card.
  * Renders an inline HTML recreation of the brand (real woff2 fonts, gold
  * gradient word, light shaft, conduit) in headless Chrome via puppeteer-core.
  * Run: node scripts/make-og.mjs
@@ -116,6 +116,6 @@ const p = await b.newPage();
 await p.setViewport({ width: 1200, height: 630, deviceScaleFactor: 1 });
 await p.setContent(html, { waitUntil: 'networkidle0' });
 await p.evaluate(() => document.fonts.ready);
-await p.screenshot({ path: path.join(ROOT, 'public', 'og.png') });
+await p.screenshot({ path: path.join(ROOT, 'public', 'og-canopy.png') });
 await b.close();
-console.log('saved public/og.png 1200x630');
+console.log('saved public/og-canopy.png 1200x630');

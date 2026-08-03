@@ -26,7 +26,9 @@ interface Props {
 const { title, description, ogTitle, ogDescription, noindex = false } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
-const ogImage = new URL('/og.png', Astro.site).href;
+// Named per design cut (not og.png) so social scrapers that cache by image
+// URL, LinkedIn especially, are forced to fetch the new card on re-scrape.
+const ogImage = new URL('/og-canopy.png', Astro.site).href;
 const ogTitleFinal = ogTitle ?? title;
 const ogDescriptionFinal = ogDescription ?? description;
 ---

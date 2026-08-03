@@ -56,26 +56,26 @@ src/
     api/discord-invite.ts  on-demand endpoint that gates the invite (the only non-static route)
   lib/                  partners.ts (university allowlist), supabase.ts (browser client)
   data/site.ts          single source of truth for copy + data
-  styles/global.css     @tailwind + base + blueprint grid + reduced-motion
-public/                 favicon.svg, og.png, robots.txt
-scripts/                make-og.py (OG image), shoot.mjs/verify.mjs (QA screenshots)
+  styles/global.css     @tailwind + base + grain/light effects + reduced-motion
+public/                 favicon.svg, og-canopy.png, robots.txt
+scripts/                make-og.mjs (OG image), shoot.mjs/verify.mjs (QA screenshots)
 prototype/              the original hand-built HTML/CSS reference (not deployed)
 ```
 
 ## Design system notes
 
-- A raw / brutalist cut of "Blueprint & Signal": warm paper (`#F5F3EE`), ink-black structure (`#111`), one raw red signal (`#FF2A2A`), heavy 2px black borders, sharp zero-radius edges, real student photos, and an industrial pipe logo.
-- Tokens are in `tailwind.config.ts`. Use them (`text-ink`, `bg-surface`, `border-line`, `font-display`, `animate-flow`, etc). The only literal colors in the codebase are the brand logo SVG (`Mark.astro`), the Google "G" in the verify gate, and a few rgba/grid values in `global.css`.
-- **Discipline rule:** ink-black (`brand`) is the structure / the flow / "get in." Red (`signal`) is a human win or arrival only (the landed markers, the hero underline, the CTA topline). Never use red decoratively.
+- "Canopy & Light": deep forest canopy (`#0F1912`) frames the site (header, hero, bands, footer), warm daylight parchment (`#F1EEE2`) carries the reading sections, and one sunlit gold (`#D9A84C`) is the only accent. Fraunces serif display, Instrument Sans body, rounded corners, soft paper grain, and a sprout-in-conduit logo.
+- Tokens are in `tailwind.config.ts`. Use them (`text-ink`, `bg-canopy`, `text-gold`, `border-line`, `font-display`, `animate-flow`, etc). The only literal colors in the codebase are the brand logo SVG (`Mark.astro`), the Google "G" in the verify gate, and a few rgba/gradient values in `global.css`.
+- **Discipline rule:** green holds structure; `gold` is warmth, arrival, and the primary action (landed markers, the hero's gradient word, CTAs, the conduit tip). Nothing else gets to be loud.
 - Photos live in `public/img/` (optimized WebP). Regenerate from `LovableUI`/`images` sources if needed.
 - **Motion** is choreographed and fully reduced-motion-safe: the conduit current, the drop-feed marquee, page-load rise, and scroll reveals all stop under `prefers-reduced-motion: reduce`, and the marquee becomes horizontally scrollable so nothing is lost.
 
 ## Regenerating the OG image
 
-`public/og.png` (1200x630) is generated from the brand fonts:
+`public/og-canopy.png` (1200x630) is rendered in headless Chrome from the brand fonts:
 
 ```bash
-python scripts/make-og.py
+node scripts/make-og.mjs
 ```
 
 ## Deploy
