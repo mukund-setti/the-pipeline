@@ -39,12 +39,19 @@ $$;
 -- Profiles: one row per auth user, school stamped from the email
 -- ------------------------------------------------------------
 create table if not exists public.profiles (
-  id         uuid primary key references auth.users (id) on delete cascade,
-  email      text not null,
-  full_name  text,
-  school     text,
-  created_at timestamptz not null default now()
+  id                uuid primary key references auth.users (id) on delete cascade,
+  email             text not null,
+  full_name         text,
+  school            text,
+  resume_name       text,
+  resume_updated_at timestamptz,
+  created_at        timestamptz not null default now()
 );
+
+-- Older databases created profiles before the resume columns existed; the
+-- column grant below needs them present either way.
+alter table public.profiles add column if not exists resume_name text;
+alter table public.profiles add column if not exists resume_updated_at timestamptz;
 
 alter table public.profiles enable row level security;
 
@@ -54,17 +61,20 @@ create policy "profiles: read own"
   to authenticated
   using (id = (select auth.uid()));
 
+-- Members may update only their own row, and only the harmless columns.
+-- email/school stay server-derived: enforced with COLUMN grants instead of a
+-- policy subquery, because a policy on profiles that selects from profiles
+-- recurses (Postgres error 42P17).
+revoke update on table public.profiles from authenticated;
+grant update (full_name, resume_name, resume_updated_at)
+  on table public.profiles to authenticated;
+
 drop policy if exists "profiles: update own name" on public.profiles;
 create policy "profiles: update own name"
   on public.profiles for update
   to authenticated
   using (id = (select auth.uid()))
-  with check (
-    id = (select auth.uid())
-    -- school/email are server-derived; members can only edit their name
-    and email = (select p.email from public.profiles p where p.id = (select auth.uid()))
-    and school is not distinct from public.school_for_email(email)
-  );
+  with check (id = (select auth.uid()));
 
 -- Create a profile automatically for every new auth user.
 create or replace function public.handle_new_user()
@@ -415,10 +425,6 @@ drop policy if exists "resumes: delete own" on storage.objects;
 create policy "resumes: delete own"
   on storage.objects for delete to authenticated
   using (bucket_id = 'resumes' and (storage.foldername(name))[1] = (select auth.uid()::text));
-
--- Display metadata (original filename) lives on the profile.
-alter table public.profiles add column if not exists resume_name text;
-alter table public.profiles add column if not exists resume_updated_at timestamptz;
 
 -- ------------------------------------------------------------
 -- Job actions: per-member saved (flagged) and applied marks
