@@ -59,6 +59,17 @@ export type ForumReply = {
 
 export type OpportunityKind = 'internship' | 'new-grad' | 'program';
 
+/** A member's stored resume. url is a short-lived signed link (null in demo). */
+export type ResumeInfo = {
+  name: string;
+  updatedAt: string;
+  url: string | null;
+};
+
+/** Per-member marks on a job: saved (flagged to revisit) and applied. */
+export type JobAction = 'saved' | 'applied';
+export type JobActionMap = Record<string, Partial<Record<JobAction, boolean>>>;
+
 export type Opportunity = {
   id: string;
   title: string;

@@ -371,3 +371,79 @@ create policy "opportunities: members read"
   using (public.is_portal_member());
 -- No insert/update/delete policies: only the service role key (used by
 -- /api/opportunities-scan) can write, because service role bypasses RLS.
+
+-- ------------------------------------------------------------
+-- Resumes (private storage; each member sees only their own)
+-- ------------------------------------------------------------
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'resumes', 'resumes', false, 5242880,
+  array[
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ]
+)
+on conflict (id) do update
+  set public = false,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+-- Files live at <user_id>/resume.<ext>; the first path segment must be the
+-- caller's own id, so nobody can read or write anyone else's resume.
+drop policy if exists "resumes: read own" on storage.objects;
+create policy "resumes: read own"
+  on storage.objects for select to authenticated
+  using (bucket_id = 'resumes' and (storage.foldername(name))[1] = (select auth.uid()::text));
+
+drop policy if exists "resumes: upload own" on storage.objects;
+create policy "resumes: upload own"
+  on storage.objects for insert to authenticated
+  with check (
+    bucket_id = 'resumes'
+    and public.is_portal_member()
+    and (storage.foldername(name))[1] = (select auth.uid()::text)
+  );
+
+drop policy if exists "resumes: replace own" on storage.objects;
+create policy "resumes: replace own"
+  on storage.objects for update to authenticated
+  using (bucket_id = 'resumes' and (storage.foldername(name))[1] = (select auth.uid()::text))
+  with check (bucket_id = 'resumes' and (storage.foldername(name))[1] = (select auth.uid()::text));
+
+drop policy if exists "resumes: delete own" on storage.objects;
+create policy "resumes: delete own"
+  on storage.objects for delete to authenticated
+  using (bucket_id = 'resumes' and (storage.foldername(name))[1] = (select auth.uid()::text));
+
+-- Display metadata (original filename) lives on the profile.
+alter table public.profiles add column if not exists resume_name text;
+alter table public.profiles add column if not exists resume_updated_at timestamptz;
+
+-- ------------------------------------------------------------
+-- Job actions: per-member saved (flagged) and applied marks
+-- ------------------------------------------------------------
+create table if not exists public.job_actions (
+  user_id        uuid not null references auth.users (id) on delete cascade,
+  opportunity_id uuid not null references public.opportunities (id) on delete cascade,
+  action         text not null check (action in ('saved', 'applied')),
+  created_at     timestamptz not null default now(),
+  primary key (user_id, opportunity_id, action)
+);
+
+alter table public.job_actions enable row level security;
+
+drop policy if exists "job_actions: read own" on public.job_actions;
+create policy "job_actions: read own"
+  on public.job_actions for select to authenticated
+  using (user_id = (select auth.uid()));
+
+drop policy if exists "job_actions: create own" on public.job_actions;
+create policy "job_actions: create own"
+  on public.job_actions for insert to authenticated
+  with check (user_id = (select auth.uid()) and public.is_portal_member());
+
+drop policy if exists "job_actions: delete own" on public.job_actions;
+create policy "job_actions: delete own"
+  on public.job_actions for delete to authenticated
+  using (user_id = (select auth.uid()));

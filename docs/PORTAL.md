@@ -103,8 +103,9 @@ Without the localhost entry, magic links and OAuth returns break in local dev.
 | `PUBLIC_SUPABASE_ANON_KEY` | Client + server (existing) | Supabase anon key. Safe to ship; RLS does the guarding. |
 | `DISCORD_INVITE_URL` | Server only (existing) | The gated Discord invite served by `/api/discord-invite`. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server only | Lets the opportunity scanner write `opportunities` rows. Bypasses RLS; never expose to the client. |
-| `ANTHROPIC_API_KEY` | Server only, optional | Enables the Hacker News AI extraction in the scanner. Without it, the HN source is skipped. |
+| `ANTHROPIC_API_KEY` | Server only, optional | Enables the Hacker News AI extraction in the scanner and the AI search endpoint (section 10). Without it, the HN source is skipped and AI search falls back to local parsing. |
 | `CRON_SECRET` | Server only | Protects `/api/opportunities-scan`. Vercel Cron sends it automatically as a Bearer token. |
+| `DISCORD_DROPS_WEBHOOK` | Server only, optional | Discord webhook URL. When set, the daily scan announces new drops in that channel (section 10). |
 
 Where to set them: `.env` locally (copy from `.env.example`), and the Vercel
 project's environment variables in production. Redeploy after changing any of
@@ -186,3 +187,79 @@ npm run dev
    `.portal-school-tag[data-tag='<slug>']` rule in `src/styles/portal.css`.
 4. Redeploy. The static build picks up the new `/portal/<slug>/` pages from
    `PORTAL_SCHOOLS` automatically.
+
+## 9. Resumes and job tracking
+
+### The resumes bucket
+
+Members can keep one resume on file in the portal. Files live in a private
+Supabase Storage bucket named `resumes`:
+
+- **Private per member.** Storage RLS requires the first path segment of every
+  object to be the caller's own user id, so files live at
+  `<user_id>/resume.<ext>` and nobody can read, replace, or delete anyone
+  else's file. There are no public URLs; the client fetches short-lived signed
+  links (10 minutes) when a member views their own resume.
+- **5 MB cap**, PDF and Word only (`.pdf`, `.doc`, `.docx`), enforced by the
+  bucket's `file_size_limit` and `allowed_mime_types` plus a client-side
+  check.
+- **Created by the schema file.** Re-running `supabase/schema.sql` creates the
+  bucket and its policies (the file is idempotent). No dashboard clicking
+  needed.
+- The original filename and upload time are display metadata on the member's
+  `profiles` row (`resume_name`, `resume_updated_at`); the stored object is
+  always named `resume.<ext>`.
+
+### Job actions: saved and applied marks
+
+The `job_actions` table records per-member marks on tracker rows: `saved`
+(flagged to revisit) and `applied`. One row per (member, opportunity, action),
+RLS-scoped so members read and write only their own marks. The Opportunities
+tab renders these as toggles on each role, so a member's pipeline state lives
+in the portal instead of a spreadsheet. Marks are personal; nobody sees
+another member's saved or applied list.
+
+In demo mode (`?demo=<school>`), resume metadata and marks live in
+`localStorage` only, and sample rows (ids starting with `seed-`) cannot be
+marked.
+
+## 10. AI search and Discord drop alerts
+
+### The AI search endpoint
+
+`POST /api/opportunities-search` turns a member's natural-language query
+("remote ml internships posted this week") into structured filters the
+Opportunities tab applies client-side.
+
+- **Members only.** The caller sends their Supabase access token as a Bearer
+  header; the endpoint verifies it server-side and requires the verified
+  email to map to a live chapter, the same membership rule RLS enforces. A
+  bare session is not enough.
+- **Needs `ANTHROPIC_API_KEY`.** Without it the endpoint returns 503 and the
+  client quietly falls back to plain local text matching, so search always
+  works.
+- What it returns: kind filters, match keywords, a remote yes/no/any flag, a
+  "new only" flag, and a short human explanation of what was applied. The
+  endpoint never queries the database; it only translates the query, and the
+  browser filters rows it already holds.
+
+### Discord drop alerts
+
+When the daily scan inserts fresh rows, it can announce them in your Discord
+so drops reach members where they already are.
+
+Create the webhook in Discord:
+
+1. Open your server and hover the channel you want announcements in
+   (`#job-postings` is the natural home), then click the gear (Edit Channel).
+2. Go to **Integrations**, then **Webhooks**.
+3. Click **New Webhook**, name it something like "Pipeline tracker", and make
+   sure the channel is `#job-postings`.
+4. Click **Copy Webhook URL**.
+
+Paste that URL as `DISCORD_DROPS_WEBHOOK` in `.env` locally and in the Vercel
+project's environment variables, then redeploy. From the next scan on, every
+run that inserts new rows posts a summary: a count, the first few roles with
+apply links, and a pointer to the portal. Runs that find nothing new stay
+silent, and a webhook failure never fails the scan (it lands in the run's
+`errors` array instead).

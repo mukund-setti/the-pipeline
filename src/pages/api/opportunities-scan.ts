@@ -29,6 +29,8 @@ const SERVICE_ROLE_KEY =
   import.meta.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ANTHROPIC_API_KEY =
   import.meta.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY;
+const DISCORD_DROPS_WEBHOOK =
+  import.meta.env.DISCORD_DROPS_WEBHOOK || process.env.DISCORD_DROPS_WEBHOOK;
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -325,6 +327,51 @@ function isHttpsUrl(raw: string): boolean {
   }
 }
 
+/* --------------------- Discord drop notifications ----------------------- */
+
+const KIND_LABELS: Record<Candidate['kind'], string> = {
+  internship: 'Internship',
+  'new-grad': 'New grad',
+  program: 'Program',
+};
+
+/**
+ * Announce freshly inserted rows to the DISCORD_DROPS_WEBHOOK channel. URLs
+ * ride in <angle brackets> so Discord does not unfurl an embed per link, and
+ * the message stays under Discord's 2000-char limit by dropping whole lines
+ * from the end (never truncating mid-line).
+ */
+async function notifyDiscord(webhook: string, fresh: Candidate[]): Promise<void> {
+  const header = `**${fresh.length} new drop${fresh.length === 1 ? '' : 's'} just landed in the tracker**`;
+  const footer = 'Browse them all: https://pipelineco.org/portal/';
+  const lines = fresh.slice(0, 8).map((c) => {
+    const meta = c.location ? `${KIND_LABELS[c.kind]}, ${c.location}` : KIND_LABELS[c.kind];
+    return `• ${c.company} · ${c.title} (${meta}) <${c.url}>`;
+  });
+
+  const assemble = (keep: number) => {
+    const parts = [header, ...lines.slice(0, keep)];
+    const rest = fresh.length - keep;
+    if (rest > 0) parts.push(`…and ${rest} more`);
+    parts.push(footer);
+    return parts.join('\n');
+  };
+
+  let keep = lines.length;
+  let content = assemble(keep);
+  while (keep > 0 && content.length > 1900) {
+    keep -= 1;
+    content = assemble(keep);
+  }
+
+  const res = await fetch(webhook, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ content }),
+  });
+  if (!res.ok) throw new Error(`webhook ${res.status}`);
+}
+
 /* ------------------------------ the handler ----------------------------- */
 
 const handler: APIRoute = async ({ request }) => {
@@ -367,6 +414,7 @@ const handler: APIRoute = async ({ request }) => {
   const candidates = [...byUrl.values()];
 
   let inserted = 0;
+  let freshRows: Candidate[] = [];
   try {
     const supa = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
@@ -403,9 +451,22 @@ const handler: APIRoute = async ({ request }) => {
       );
       if (error) throw error;
       inserted = fresh.length;
+      freshRows = fresh;
     }
   } catch (e: any) {
     errors.push(`db: ${e?.message ?? 'failed'}`);
+  }
+
+  // Announce fresh drops in Discord. Best-effort: a webhook hiccup lands in
+  // errors[] but never fails the run.
+  let notified = false;
+  if (inserted > 0 && DISCORD_DROPS_WEBHOOK) {
+    try {
+      await notifyDiscord(DISCORD_DROPS_WEBHOOK, freshRows);
+      notified = true;
+    } catch (e: any) {
+      errors.push(`discord: ${e?.message ?? 'failed'}`);
+    }
   }
 
   return json({
@@ -413,6 +474,7 @@ const handler: APIRoute = async ({ request }) => {
     scanned,
     inserted,
     skipped: candidates.length - inserted,
+    notified,
     errors,
   });
 };
