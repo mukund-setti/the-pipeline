@@ -206,9 +206,10 @@ Supabase Storage bucket named `resumes`:
 - **Created by the schema file.** Re-running `supabase/schema.sql` creates the
   bucket and its policies (the file is idempotent). No dashboard clicking
   needed.
-- The original filename and upload time are display metadata on the member's
-  `profiles` row (`resume_name`, `resume_updated_at`); the stored object is
-  always named `resume.<ext>`.
+- The stored object's own name and timestamp are the metadata: the file is
+  saved as `<user_id>/<sanitized original filename>` and the UI reads name and
+  date straight from storage. Nothing about resumes touches the `profiles`
+  table (the `resume_name`/`resume_updated_at` columns exist but are unused).
 
 ### Job actions: saved and applied marks
 

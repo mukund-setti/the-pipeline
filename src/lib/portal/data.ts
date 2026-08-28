@@ -375,65 +375,59 @@ class SupabaseStore implements PortalStore {
         }));
   }
 
+  // Resume state lives ENTIRELY in storage: the file's own name and
+  // timestamp are the metadata. No profiles round-trip, so the feature has
+  // no dependency on profiles policies.
+
   async getResume(): Promise<ResumeInfo | null> {
-    const { data, error } = await this.supa
-      .from('profiles')
-      .select('resume_name, resume_updated_at')
-      .eq('id', this.user.id)
-      .maybeSingle();
+    const { data: files, error } = await this.supa.storage
+      .from('resumes')
+      .list(this.user.id, { sortBy: { column: 'created_at', order: 'desc' } });
     if (error) throw error;
-    if (!data?.resume_name) return null;
-    const { data: files } = await this.supa.storage.from('resumes').list(this.user.id);
     const file = files?.[0];
-    let url: string | null = null;
-    if (file) {
-      const { data: signed } = await this.supa.storage
-        .from('resumes')
-        .createSignedUrl(`${this.user.id}/${file.name}`, 600);
-      url = signed?.signedUrl ?? null;
-    }
-    return { name: data.resume_name, updatedAt: data.resume_updated_at ?? '', url };
+    if (!file) return null;
+    const { data: signed } = await this.supa.storage
+      .from('resumes')
+      .createSignedUrl(`${this.user.id}/${file.name}`, 600);
+    return {
+      name: file.name,
+      updatedAt: (file as any).updated_at || (file as any).created_at || '',
+      url: signed?.signedUrl ?? null,
+    };
   }
 
   async uploadResume(file: File): Promise<ResumeInfo> {
     const ext = (file.name.split('.').pop() || '').toLowerCase();
     if (!['pdf', 'doc', 'docx'].includes(ext)) throw new Error('Use a PDF or Word file.');
     if (file.size > 5 * 1024 * 1024) throw new Error('Keep it under 5 MB.');
-    // One resume per member: clear the folder first so a .pdf to .docx swap
-    // does not leave the old file behind.
+    // The object key carries the display name; sanitize it for storage.
+    const safeName = file.name.replace(/[^\w.\-]+/g, '_').slice(-80);
+    // One resume per member: clear the folder first so a replacement with a
+    // different filename does not leave the old file behind.
     const { data: existing } = await this.supa.storage.from('resumes').list(this.user.id);
     if (existing?.length) {
       await this.supa.storage
         .from('resumes')
         .remove(existing.map((f) => `${this.user.id}/${f.name}`));
     }
-    const path = `${this.user.id}/resume.${ext}`;
+    const path = `${this.user.id}/${safeName}`;
     const { error } = await this.supa.storage
       .from('resumes')
       .upload(path, file, { upsert: true, contentType: file.type || undefined });
     if (error) throw error;
-    const updatedAt = new Date().toISOString();
-    const { error: profErr } = await this.supa
-      .from('profiles')
-      .update({ resume_name: file.name, resume_updated_at: updatedAt })
-      .eq('id', this.user.id);
-    if (profErr) throw profErr;
     const { data: signed } = await this.supa.storage.from('resumes').createSignedUrl(path, 600);
-    return { name: file.name, updatedAt, url: signed?.signedUrl ?? null };
+    return { name: safeName, updatedAt: new Date().toISOString(), url: signed?.signedUrl ?? null };
   }
 
   async removeResume(): Promise<void> {
-    const { data: existing } = await this.supa.storage.from('resumes').list(this.user.id);
+    const { data: existing, error } = await this.supa.storage.from('resumes').list(this.user.id);
+    if (error) throw error;
     if (existing?.length) {
-      await this.supa.storage
+      const { error: rmErr } = await this.supa.storage
         .from('resumes')
         .remove(existing.map((f) => `${this.user.id}/${f.name}`));
+      if (rmErr) throw rmErr;
     }
-    const { error } = await this.supa
-      .from('profiles')
-      .update({ resume_name: null, resume_updated_at: null })
-      .eq('id', this.user.id);
-    if (error) throw error;
   }
 
   async listActions(): Promise<JobActionMap> {
