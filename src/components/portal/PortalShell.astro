@@ -1,0 +1,247 @@
+---
+/**
+ * Portal app chrome: one template for every chapter. The canopy rail, the
+ * parchment content pane, and the layout never change between schools; the
+ * data-school attribute on <html> swaps in that chapter's color variables
+ * (src/styles/portal.css), so UCI / UCLA / UCR feel like the same product
+ * in different jerseys and members can navigate any campus's portal.
+ *
+ * Access: a client guard (guardPortal) resolves the Supabase session, maps
+ * the email to a chapter, and redirects anyone who does not belong here.
+ * Real data protection is Supabase RLS; the guard is UX.
+ */
+import '@fontsource/fraunces/latin-500.css';
+import '@fontsource/fraunces/latin-600.css';
+import '@fontsource/instrument-sans/latin-400.css';
+import '@fontsource/instrument-sans/latin-500.css';
+import '@fontsource/instrument-sans/latin-600.css';
+import '@fontsource/instrument-sans/latin-700.css';
+import '../../styles/global.css';
+import '../../styles/portal.css';
+
+import Mark from '../ui/Mark.astro';
+import type { PortalSchool } from '../../lib/schools';
+import { channelsForSchool } from '../../lib/portal/types';
+
+interface Props {
+  school: PortalSchool;
+  /** 'home' | 'opportunities' | 'forum' | 'chat' */
+  active: string;
+  title: string;
+}
+
+const { school, active, title } = Astro.props;
+const channels = channelsForSchool(school.slug);
+const base = `/portal/${school.slug}`;
+
+const navItems = [
+  { key: 'home', label: 'Home', href: `${base}/`, icon: 'home' },
+  { key: 'opportunities', label: 'Opportunities', href: `${base}/opportunities/`, icon: 'feed' },
+  { key: 'forum', label: 'Forum', href: `${base}/forum/`, icon: 'forum' },
+] as const;
+---
+
+<!doctype html>
+<html lang="en" data-school={school.slug} data-page={active}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title} · {school.short} · The Pipeline</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#0F1912" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <div class="portal-shell" data-shell>
+      <aside class="portal-rail" aria-label="Portal navigation">
+        <div class="flex flex-col gap-5 p-4">
+          <a
+            href="/"
+            class="inline-flex items-center gap-2.5 px-1 font-display text-[1rem] font-semibold tracking-tight text-ondark"
+            aria-label="The Pipeline, home"
+          >
+            <Mark size={30} />
+            The Pipeline
+          </a>
+
+          <div class="portal-school-badge">
+            <span class="portal-school-crest">{school.short}</span>
+            <span class="min-w-0">
+              <span class="block truncate font-display text-[0.98rem] font-semibold text-ondark">
+                {school.name}
+              </span>
+              <span class="block text-[0.72rem] text-ondark-soft">Chapter portal</span>
+            </span>
+          </div>
+
+          <nav class="flex flex-col gap-1" aria-label="Portal pages">
+            {
+              navItems.map((item) => (
+                <a
+                  href={item.href}
+                  class="portal-nav-item"
+                  aria-current={active === item.key ? 'page' : undefined}
+                >
+                  <svg
+                    class="h-[16px] w-[16px] flex-none opacity-80"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    {item.icon === 'home' && <path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z" />}
+                    {item.icon === 'feed' && (
+                      <>
+                        <rect x="3" y="4" width="18" height="16" rx="3" />
+                        <path d="M7 9h10M7 13h10M7 17h6" />
+                      </>
+                    )}
+                    {item.icon === 'forum' && <path d="M21 12a8 8 0 0 1-8 8H4l2.5-2.7A8 8 0 1 1 21 12z" />}
+                  </svg>
+                  {item.label}
+                </a>
+              ))
+            }
+          </nav>
+
+          <div class="flex flex-col gap-1">
+            <div class="portal-rail-label mb-1.5 mt-1">Chats</div>
+            {
+              channels.map((ch) => (
+                <a
+                  href={`${base}/chat/?channel=${ch.slug}`}
+                  class="portal-nav-item"
+                  data-channel-link={ch.slug}
+                  aria-current={undefined}
+                >
+                  <span class="portal-hash" aria-hidden="true">#</span>
+                  <span class="truncate">{ch.name}</span>
+                  {ch.scope === 'national' && (
+                    <span class="ml-auto rounded-pill bg-white/10 px-1.5 py-px text-[0.6rem] font-bold uppercase tracking-wider text-ondark-soft">
+                      all
+                    </span>
+                  )}
+                </a>
+              ))
+            }
+          </div>
+        </div>
+
+        <div class="mt-auto border-t border-line-dark p-4">
+          <div class="flex items-center gap-2.5">
+            <span class="portal-avatar" data-user-avatar>·</span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-[0.85rem] font-semibold text-ondark" data-user-name>
+                Signing in…
+              </span>
+              <span class="block truncate text-[0.7rem] text-ondark-soft" data-user-email></span>
+            </span>
+            <button
+              type="button"
+              class="rounded-lg p-1.5 text-ondark-soft transition-colors hover:bg-white/10 hover:text-ondark"
+              data-sign-out
+              title="Sign out"
+              aria-label="Sign out"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <path d="M16 17l5-5-5-5M21 12H9" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <div class="portal-main">
+        <header class="portal-topbar">
+          <button type="button" class="portal-menu-btn" data-menu-toggle aria-label="Open navigation">
+            <svg class="h-4.5 w-4.5" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+          </button>
+          <h1 class="font-display text-[1.15rem] font-semibold tracking-tight text-ink">{title}</h1>
+          <span class="ml-auto"></span>
+          <span class="portal-chip">{school.short} · {school.mascot}</span>
+        </header>
+
+        <div class="portal-notice" data-portal-notice hidden>
+          <svg class="h-4 w-4 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8v4M12 16h.01" />
+          </svg>
+          <span>
+            Showing sample data: the live database is not connected yet. Run
+            <code class="rounded bg-white/60 px-1">supabase/schema.sql</code> in your Supabase project
+            (see docs/PORTAL.md).
+          </span>
+        </div>
+
+        <slot />
+      </div>
+    </div>
+
+    <div class="portal-scrim" data-scrim></div>
+
+    <div class="portal-veil" data-veil>
+      <div class="flex flex-col items-center gap-3 text-ink-soft">
+        <span class="portal-school-crest" style="width:48px;height:48px;font-size:0.9rem">{school.short}</span>
+        <span class="label text-[0.72rem]">Opening your portal</span>
+      </div>
+    </div>
+
+    <script>
+      import { guardPortal, portalSignOut } from '../../lib/portal/data';
+
+      const schoolSlug = document.documentElement.getAttribute('data-school') || '';
+
+      // Gate the page. On success, populate the member card and lift the veil;
+      // guardPortal handles every redirect case itself.
+      guardPortal(schoolSlug)
+        .then((user) => {
+          if (!user) return;
+          const name = document.querySelector('[data-user-name]');
+          const email = document.querySelector('[data-user-email]');
+          const avatar = document.querySelector('[data-user-avatar]');
+          if (name) name.textContent = user.name + (user.demo ? ' (demo)' : '');
+          if (email) email.textContent = user.email;
+          if (avatar) avatar.textContent = (user.name[0] || '?').toUpperCase();
+          document.querySelector('[data-veil]')?.setAttribute('data-hidden', '');
+        })
+        .catch(() => {
+          // Never leave the veil up: an unexpected guard failure (blocked
+          // storage, network) falls back to the sign-in page.
+          location.replace('/portal/');
+        });
+
+      document.querySelector('[data-sign-out]')?.addEventListener('click', () => {
+        portalSignOut();
+      });
+
+      // Islands announce fallback mode; the shell shows one shared banner.
+      window.addEventListener('portal:notice', () => {
+        const el = document.querySelector<HTMLElement>('[data-portal-notice]');
+        if (el) el.hidden = false;
+      });
+
+      // Mobile drawer.
+      const shell = document.querySelector('[data-shell]');
+      document.querySelector('[data-menu-toggle]')?.addEventListener('click', () => {
+        shell?.toggleAttribute('data-menu-open');
+      });
+      document.querySelector('[data-scrim]')?.addEventListener('click', () => {
+        shell?.removeAttribute('data-menu-open');
+      });
+
+      // Highlight the active chat channel in the rail (chat page only).
+      if (location.pathname.includes('/chat')) {
+        const current = new URLSearchParams(location.search).get('channel') || 'national';
+        document
+          .querySelector(`[data-channel-link="${current}"]`)
+          ?.setAttribute('aria-current', 'page');
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+---
+/**
+ * Forum page: the national board, served per chapter at
+ * /portal/<school>/forum/. The page is a thin frame; the ForumApp island
+ * loads data client-side after the shell's auth guard resolves the member.
+ */
+import PortalShell from '../../../components/portal/PortalShell.astro';
+import { PORTAL_SCHOOLS, schoolBySlug } from '../../../lib/schools';
+import ForumApp from '../../../components/portal/ForumApp';
+
+export function getStaticPaths() {
+  return PORTAL_SCHOOLS.map((s) => ({ params: { school: s.slug } }));
+}
+
+const school = schoolBySlug(Astro.params.school as string)!;
+---
+<PortalShell school={school} active="forum" title="Forum">
+  <ForumApp client:only="react" school={school.slug} />
+</PortalShell>

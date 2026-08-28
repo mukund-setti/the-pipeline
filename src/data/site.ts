@@ -26,6 +26,7 @@ export const nav = [
   { label: 'How it works', href: '/how/' },
   { label: 'Outcomes', href: '/outcomes/' },
   { label: 'About', href: '/about/' },
+  { label: 'Portal', href: '/portal/' },
 ] as const;
 
 export const navCta = { label: 'Join', href: '/join/' } as const;

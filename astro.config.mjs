@@ -15,7 +15,9 @@ export default defineConfig({
   // rendering (it carries `export const prerender = false`). The Vercel
   // adapter turns that one route into a serverless function.
   output: 'static',
-  adapter: vercel(),
+  // maxDuration: the opportunities scanner (/api/opportunities-scan) fetches
+  // several sources plus a model call; the 10s default would kill cron runs.
+  adapter: vercel({ maxDuration: 60 }),
   // Tokens live in tailwind.config.ts; we manage base styles ourselves.
   integrations: [
     tailwind({ applyBaseStyles: false }),

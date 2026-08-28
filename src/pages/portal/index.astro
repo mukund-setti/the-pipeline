@@ -1,0 +1,336 @@
+---
+/**
+ * Portal front door and router. Signed out: Google / magic-link sign-in.
+ * Signed in: resolves the member's chapter from their email and forwards
+ * them to /portal/<school>/. UC students whose campus portal has not
+ * launched yet get pointed at the Discord instead.
+ */
+import Layout from '../../components/Layout.astro';
+import Eyebrow from '../../components/ui/Eyebrow.astro';
+import { PORTAL_SCHOOLS } from '../../lib/schools';
+
+const PRIMARY =
+  'inline-flex w-full items-center justify-center gap-2.5 rounded-pill border border-transparent bg-gold-bright px-6 py-3.5 font-sans text-base font-semibold text-canopy transition-colors hover:bg-gold-pale';
+const GHOST =
+  'inline-flex w-full items-center justify-center gap-2.5 rounded-pill border border-line-strong bg-transparent px-6 py-3.5 font-sans text-base font-semibold text-ink transition-colors hover:border-ink hover:bg-brand-soft/60';
+const INPUT =
+  'w-full rounded-field border border-line-strong bg-surface px-4 py-3 font-sans text-base text-ink outline-none transition-colors placeholder:text-ink-soft/60 focus:border-gold-deep';
+---
+
+<Layout
+  title="Member portal · The Pipeline"
+  description="Sign in with your university email to open your chapter portal."
+  noindex
+>
+  <section class="wrap py-16 md:py-24">
+    <div class="mx-auto grid max-w-[980px] gap-12 md:grid-cols-[1.1fr_1fr] md:gap-16">
+      <div>
+        <Eyebrow>Member portal</Eyebrow>
+        <h1 class="mt-4 font-display text-pagehero font-semibold text-ink">
+          Your chapter,<br />signed in.
+        </h1>
+        <p class="lede mt-5 max-w-[46ch] text-ink-soft">
+          The portal is where fellows live day to day: the opportunity tracker, the forum, the
+          national room, and your campus chapter's chat. Sign in with your university Google and
+          we route you to your school.
+        </p>
+        <ul class="mt-8 flex flex-wrap gap-2.5">
+          {
+            PORTAL_SCHOOLS.map((s) => (
+              <li class="inline-flex items-center gap-2 rounded-pill border border-line bg-surface px-4 py-2 text-[0.85rem] font-semibold text-ink">
+                <span
+                  class="inline-block h-2.5 w-2.5 rounded-full"
+                  style={`background:${s.colors.accent}`}
+                  aria-hidden="true"
+                />
+                {s.name}
+              </li>
+            ))
+          }
+          <li class="inline-flex items-center rounded-pill border border-dashed border-line-strong px-4 py-2 text-[0.85rem] font-medium text-ink-soft">
+            More campuses next
+          </li>
+        </ul>
+      </div>
+
+      <div class="max-w-[440px]" data-pp-root>
+        {/* checking: session probe on load */}
+        <section data-pp="checking">
+          <div class="flex items-center gap-3 py-2 text-ink-soft" aria-live="polite">
+            <span class="h-4 w-4 animate-spin rounded-full border-2 border-ink/20 border-t-signal"></span>
+            <span class="label text-[0.72rem]">Checking your session</span>
+          </div>
+        </section>
+
+        {/* choose */}
+        <section data-pp="choose" hidden>
+          <button type="button" class={PRIMARY} data-pp-google>
+            <svg class="h-[18px] w-[18px]" viewBox="0 0 48 48" aria-hidden="true">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+            </svg>
+            Continue with your university Google
+          </button>
+
+          <div class="label my-5 flex items-center gap-3 text-[0.66rem] text-ink-soft">
+            <span class="h-px flex-1 bg-line"></span>or<span class="h-px flex-1 bg-line"></span>
+          </div>
+
+          <form data-pp-email-form novalidate>
+            <label class="label mb-1.5 block text-[0.68rem] text-ink-soft" for="pp-email">
+              University email
+            </label>
+            <input
+              id="pp-email"
+              class={INPUT}
+              type="email"
+              inputmode="email"
+              autocomplete="email"
+              required
+              placeholder="you@uci.edu"
+            />
+            <button type="submit" class={`${GHOST} mt-3`}>Email me a sign-in link</button>
+          </form>
+
+          <p class="mt-4 text-[0.82rem] leading-relaxed text-ink-soft">
+            Portals are live for UCI, UCLA, and UCR. Any UC email can still
+            <a class="font-semibold text-ink underline-offset-4 hover:underline" href="/join/">join the Discord</a>.
+          </p>
+        </section>
+
+        {/* codeSent */}
+        <section data-pp="codeSent" hidden>
+          <div class="mb-2 font-display text-[1.4rem] font-semibold text-ink">Check your email.</div>
+          <p class="mb-5 text-ink-soft">
+            We sent a sign-in link to <span class="font-semibold text-ink" data-pp-email></span>.
+            Open it from your inbox and you will land back here, signed in. It can take a minute;
+            check spam too.
+          </p>
+          <div class="flex flex-wrap gap-x-5 gap-y-1">
+            <button type="button" class="label text-[0.7rem] text-ink underline-offset-4 hover:underline" data-pp-resend>
+              Resend link
+            </button>
+            <button type="button" class="label text-[0.7rem] text-ink-soft hover:text-ink" data-pp-reset>
+              Use a different email
+            </button>
+          </div>
+        </section>
+
+        {/* busy */}
+        <section data-pp="busy" hidden>
+          <div class="flex items-center gap-3 py-2 text-ink-soft" aria-live="polite">
+            <span class="h-4 w-4 animate-spin rounded-full border-2 border-ink/20 border-t-signal"></span>
+            <span class="label text-[0.72rem]" data-pp-busy>Working</span>
+          </div>
+        </section>
+
+        {/* noChapter: signed in, UC campus without a portal yet */}
+        <section data-pp="noChapter" hidden>
+          <div class="mb-2 font-display text-[1.4rem] font-semibold text-ink">
+            Your campus portal is on the way.
+          </div>
+          <p class="mb-5 text-ink-soft">
+            You're verified as <span class="font-semibold text-ink" data-pp-email></span>. Chapter
+            portals are live at UCI, UCLA, and UCR so far, yours is coming. Everything still
+            happens in the Discord in the meantime.
+          </p>
+          <a class={PRIMARY} href="/join/">Open the Discord gate <span aria-hidden="true">&rarr;</span></a>
+          <button type="button" class="label mt-4 block text-[0.7rem] text-ink-soft hover:text-ink" data-pp-reset>
+            Not you? Sign out
+          </button>
+        </section>
+
+        {/* blocked: not a partner school */}
+        <section data-pp="blocked" hidden>
+          <div class="mb-2 font-display text-[1.4rem] font-semibold text-ink">
+            Almost. We're not at your campus yet.
+          </div>
+          <p class="mb-5 text-ink-soft">
+            The Pipeline is open to UC students right now, and the portal is for members. If you
+            want your campus next, tell us you stopped by.
+          </p>
+          <a class={GHOST} href="/join/">About joining <span aria-hidden="true">&rarr;</span></a>
+          <button type="button" class="label mt-4 block text-[0.7rem] text-ink-soft hover:text-ink" data-pp-reset>
+            Use a different email
+          </button>
+        </section>
+
+        <p data-pp-note class="mt-3 text-[0.85rem] text-ink-soft" aria-live="polite" hidden></p>
+
+        {
+          import.meta.env.DEV && (
+            <p class="mt-6 border-t border-dashed border-line pt-4 text-[0.78rem] text-ink-soft">
+              Dev preview:
+              {PORTAL_SCHOOLS.map((s) => (
+                <a class="ml-2 font-semibold text-ink underline-offset-4 hover:underline" href={`/portal/${s.slug}/?demo=${s.slug}`}>
+                  {s.short} demo
+                </a>
+              ))}
+            </p>
+          )
+        }
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  import { getSupabase } from '../../lib/supabase';
+  import { schoolForEmail } from '../../lib/schools';
+  import { partnerForEmail } from '../../lib/partners';
+
+  const root = document.querySelector<HTMLElement>('[data-pp-root]');
+  if (root) init(root);
+
+  function init(root: HTMLElement) {
+    let email = '';
+    const $ = <T extends Element>(s: string) => root.querySelector<T>(s);
+    const sections = root.querySelectorAll<HTMLElement>('[data-pp]');
+    const noteEl = $<HTMLElement>('[data-pp-note]');
+
+    const show = (state: string) => {
+      sections.forEach((s) => (s.hidden = s.getAttribute('data-pp') !== state));
+      setNote('');
+    };
+    const setNote = (msg: string) => {
+      if (!noteEl) return;
+      noteEl.textContent = msg;
+      noteEl.hidden = !msg;
+    };
+    const setEmail = (e: string) =>
+      root.querySelectorAll('[data-pp-email]').forEach((el) => (el.textContent = e));
+    const setBusy = (label: string) => {
+      const b = $<HTMLElement>('[data-pp-busy]');
+      if (b) b.textContent = label;
+      show('busy');
+    };
+
+    /** Signed-in routing: portal school -> go; UC without portal -> explain. */
+    function route(userEmail: string) {
+      email = userEmail;
+      setEmail(userEmail);
+      const school = schoolForEmail(userEmail);
+      if (school) {
+        setBusy(`Opening the ${school.short} portal`);
+        location.replace(`/portal/${school.slug}/`);
+        return;
+      }
+      show(partnerForEmail(userEmail).ok ? 'noChapter' : 'blocked');
+    }
+
+    // Surface an auth error returned in the URL hash (expired link, etc.).
+    {
+      const h = new URLSearchParams(location.hash.replace(/^#/, ''));
+      if (h.get('error')) {
+        history.replaceState(null, '', location.pathname);
+        show('choose');
+        setNote(
+          h.get('error_code') === 'otp_expired'
+            ? 'That link expired or was already used. Request a fresh one and open the newest email right away.'
+            : 'That sign-in did not go through. Request a new link and try again.'
+        );
+      }
+    }
+
+    // Session probe on load.
+    (async () => {
+      const supa = getSupabase();
+      if (!supa) {
+        show('choose');
+        setNote(import.meta.env.DEV ? 'Supabase env vars are not set; use the dev preview links below.' : '');
+        return;
+      }
+      const { data } = await supa.auth.getSession();
+      if (data.session?.user?.email) {
+        route(data.session.user.email);
+      } else if (!location.hash.includes('access_token')) {
+        show('choose');
+      } else {
+        // Hash carries a token but no session materialized yet. If it never
+        // does (mangled link, storage failure), do not spin forever.
+        setTimeout(() => {
+          const checking = root.querySelector<HTMLElement>('[data-pp="checking"]');
+          if (checking && !checking.hidden) {
+            show('choose');
+            setNote('That sign-in link did not go through. Request a new one and try again.');
+          }
+        }, 8000);
+      }
+      supa.auth.onAuthStateChange((_event: string, session: any) => {
+        if (session?.user?.email) route(session.user.email);
+      });
+    })();
+
+    $('[data-pp-google]')?.addEventListener('click', async () => {
+      const supa = getSupabase();
+      if (!supa) return setNote('Sign-in is not configured yet.');
+      setBusy('Redirecting to Google');
+      const { error } = await supa.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${location.origin}/portal/` },
+      });
+      if (error) {
+        show('choose');
+        setNote(error.message || 'Could not start Google sign-in.');
+      }
+    });
+
+    async function sendLink(to: string): Promise<string | null> {
+      const supa = getSupabase();
+      if (!supa) return 'Sign-in is not configured yet.';
+      const { error } = await supa.auth.signInWithOtp({
+        email: to,
+        options: { shouldCreateUser: true, emailRedirectTo: `${location.origin}/portal/` },
+      });
+      if (!error) return null;
+      // Make the two most common Supabase email failures actionable instead
+      // of silent (default SMTP only delivers to project members, ~2/hr).
+      const msg = error.message || '';
+      if (/rate limit/i.test(msg))
+        return 'Email rate limit hit. Supabase’s built-in mailer allows very few emails per hour. Set up custom SMTP (docs/PORTAL.md) or try Google sign-in.';
+      if (/signups not allowed/i.test(msg))
+        return 'Email sign-ups are disabled in Supabase Auth settings. Enable the Email provider + sign-ups, or use Google.';
+      return msg || 'Could not send the link. Try again.';
+    }
+
+    $('[data-pp-email-form]')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      email = ($<HTMLInputElement>('#pp-email')?.value || '').trim();
+      if (!email || !email.includes('@')) return setNote('Enter your university email first.');
+      // Portal-override emails (founders/officers in schools.ts) are valid
+      // even though they are not campus domains.
+      if (!schoolForEmail(email) && !partnerForEmail(email).ok) {
+        setEmail(email);
+        return show('blocked');
+      }
+      setBusy('Sending your link');
+      const err = await sendLink(email);
+      if (err) {
+        show('choose');
+        setNote(err);
+      } else {
+        setEmail(email);
+        show('codeSent');
+      }
+    });
+
+    $('[data-pp-resend]')?.addEventListener('click', async () => {
+      setNote('Sending a new link…');
+      const err = await sendLink(email);
+      setNote(err ?? 'New link sent.');
+    });
+
+    root.querySelectorAll('[data-pp-reset]').forEach((b) =>
+      b.addEventListener('click', async () => {
+        const supa = getSupabase();
+        if (supa) await supa.auth.signOut();
+        email = '';
+        const ei = $<HTMLInputElement>('#pp-email');
+        if (ei) ei.value = '';
+        show('choose');
+      })
+    );
+  }
+</script>

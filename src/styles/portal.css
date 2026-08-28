@@ -1,0 +1,341 @@
+/* ============================================================
+   THE PIPELINE PORTAL
+   App chrome for /portal/<school>/. Extends "Canopy & Light":
+   the canopy-green rail and parchment content stay identical
+   across campuses; each school recolors ONE variable family
+   below (its blue + gold), so every portal feels like the same
+   product wearing that chapter's colors.
+   ============================================================ */
+
+/* Per-school identity. Set on <html data-school="...">. */
+[data-school='uci'] {
+  --school-accent: #1b7fbd;
+  --school-deep: #00558c;
+  --school-soft: #dae8f1;
+  --school-gold: #ffd200;
+}
+[data-school='ucla'] {
+  --school-accent: #2774ae;
+  --school-deep: #155d96;
+  --school-soft: #dceaf5;
+  --school-gold: #ffd100;
+}
+[data-school='ucr'] {
+  --school-accent: #3b6eda;
+  --school-deep: #2145a8;
+  --school-soft: #dde4f6;
+  --school-gold: #ffb81c;
+}
+
+/* ------------------------------------------------------------
+   Shell layout: fixed rail + scrolling main pane.
+   ------------------------------------------------------------ */
+.portal-shell {
+  display: grid;
+  grid-template-columns: 268px minmax(0, 1fr);
+  min-height: 100dvh;
+}
+
+.portal-rail {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(217, 168, 76, 0.07), transparent 60%),
+    theme(colors.canopy.DEFAULT);
+  border-right: 1px solid theme(colors.line.dark);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(242, 236, 218, 0.16) transparent;
+}
+
+.portal-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+/* Chat is an app frame, not a document: pin the pane to the viewport so the
+   message list (flex-1 min-h-0 + overflow-y-auto) is the scroll container.
+   min-height alone would let long histories stretch the page instead. */
+[data-page='chat'] .portal-shell {
+  height: 100dvh;
+}
+[data-page='chat'] .portal-main {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------
+   Rail pieces
+   ------------------------------------------------------------ */
+.portal-school-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: theme(borderRadius.card);
+  background: rgba(242, 236, 218, 0.045);
+  border: 1px solid theme(colors.line.dark);
+}
+
+.portal-school-crest {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: 999px;
+  font-family: theme(fontFamily.display);
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: linear-gradient(145deg, var(--school-accent), var(--school-deep));
+  box-shadow:
+    0 0 0 2px theme(colors.canopy.DEFAULT),
+    0 0 0 4px var(--school-gold);
+}
+
+.portal-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: theme(colors.ondark.soft);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.portal-nav-item:hover {
+  color: theme(colors.ondark.DEFAULT);
+  background: rgba(242, 236, 218, 0.06);
+}
+.portal-nav-item[aria-current='page'] {
+  color: theme(colors.ondark.DEFAULT);
+  background: rgba(242, 236, 218, 0.09);
+  box-shadow: inset 3px 0 0 0 var(--school-accent);
+}
+.portal-nav-item[aria-current='page'] .portal-hash {
+  color: var(--school-gold);
+}
+.portal-hash {
+  color: rgba(242, 236, 218, 0.35);
+  font-weight: 600;
+}
+
+.portal-rail-label {
+  font-family: theme(fontFamily.sans);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(242, 236, 218, 0.4);
+  padding: 0 12px;
+}
+
+/* ------------------------------------------------------------
+   Content-side helpers shared by portal pages/islands
+   ------------------------------------------------------------ */
+.portal-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 22px;
+  background: color-mix(in srgb, theme(colors.bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid theme(colors.line.DEFAULT);
+}
+
+.portal-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: var(--school-soft);
+  color: var(--school-deep);
+}
+
+.portal-chip--gold {
+  background: theme(colors.brand.soft);
+  color: theme(colors.gold.deep);
+}
+
+/* Small colored school tag next to author names (cross-campus rooms). */
+.portal-school-tag {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.portal-school-tag[data-tag='uci'] { background: #dae8f1; color: #00558c; }
+.portal-school-tag[data-tag='ucla'] { background: #dceaf5; color: #155d96; }
+.portal-school-tag[data-tag='ucr'] { background: #dde4f6; color: #2145a8; }
+
+.portal-avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(145deg, var(--school-accent), var(--school-deep));
+}
+
+.portal-card {
+  background: theme(colors.surface);
+  border: 1px solid theme(colors.line.DEFAULT);
+  border-radius: theme(borderRadius.card);
+}
+
+.portal-input {
+  width: 100%;
+  border-radius: theme(borderRadius.field);
+  border: 1px solid theme(colors.line.strong);
+  background: theme(colors.surface);
+  padding: 10px 14px;
+  font-family: theme(fontFamily.sans);
+  font-size: 0.95rem;
+  color: theme(colors.ink.DEFAULT);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.portal-input::placeholder {
+  color: rgba(92, 101, 83, 0.55);
+}
+.portal-input:focus {
+  border-color: var(--school-accent);
+}
+
+.portal-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: theme(colors.gold.bright);
+  color: theme(colors.canopy.DEFAULT);
+  padding: 9px 20px;
+  font-family: theme(fontFamily.sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background-color 0.15s ease;
+  cursor: pointer;
+}
+.portal-btn-primary:hover { background: theme(colors.gold.pale); }
+.portal-btn-primary:disabled { opacity: 0.5; cursor: default; }
+
+.portal-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 999px;
+  border: 1px solid theme(colors.line.strong);
+  background: transparent;
+  color: theme(colors.ink.DEFAULT);
+  padding: 8px 18px;
+  font-family: theme(fontFamily.sans);
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+  cursor: pointer;
+}
+.portal-btn-ghost:hover {
+  border-color: var(--school-deep);
+  background: var(--school-soft);
+}
+
+/* Setup / sample-data notice band. Author display:flex would defeat the
+   hidden attribute's UA rule, so restate it explicitly. */
+.portal-notice[hidden] {
+  display: none;
+}
+.portal-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 22px;
+  font-size: 0.82rem;
+  color: theme(colors.ink.soft);
+  background: theme(colors.brand.soft);
+  border-bottom: 1px solid theme(colors.line.DEFAULT);
+}
+
+/* Auth veil: covers content until the guard resolves the member. */
+.portal-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  background: theme(colors.bg);
+  transition: opacity 0.25s ease;
+}
+.portal-veil[data-hidden] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------
+   Mobile: rail becomes a slide-over drawer.
+   ------------------------------------------------------------ */
+.portal-menu-btn { display: none; }
+
+@media (max-width: 899px) {
+  .portal-shell { grid-template-columns: minmax(0, 1fr); }
+  .portal-rail {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(300px, 84vw);
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    box-shadow: 24px 0 60px rgba(15, 25, 18, 0.35);
+  }
+  .portal-shell[data-menu-open] .portal-rail { transform: translateX(0); }
+  .portal-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid theme(colors.line.DEFAULT);
+    background: theme(colors.surface);
+    color: theme(colors.ink.DEFAULT);
+    cursor: pointer;
+  }
+  .portal-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(15, 25, 18, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .portal-shell[data-menu-open] ~ .portal-scrim,
+  .portal-shell[data-menu-open] .portal-scrim {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

@@ -1,0 +1,14 @@
+---
+import PortalShell from '../../../components/portal/PortalShell.astro';
+import { PORTAL_SCHOOLS, schoolBySlug } from '../../../lib/schools';
+import OpportunitiesApp from '../../../components/portal/OpportunitiesApp';
+
+export function getStaticPaths() {
+  return PORTAL_SCHOOLS.map((s) => ({ params: { school: s.slug } }));
+}
+
+const school = schoolBySlug(Astro.params.school as string)!;
+---
+<PortalShell school={school} active="opportunities" title="Opportunities">
+  <OpportunitiesApp client:only="react" school={school.slug} />
+</PortalShell>

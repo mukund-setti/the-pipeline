@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/opportunities-scan",
+      "schedule": "0 13 * * *"
+    }
+  ]
+}

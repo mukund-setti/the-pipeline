@@ -87,6 +87,7 @@ const SUBLINK = 'label text-[0.7rem]';
     <a class={PRIMARY} data-vg-invite href="#" target="_blank" rel="noopener" hidden>
       Open the Discord <span aria-hidden="true">&rarr;</span>
     </a>
+    <a class={`${GHOST} mt-3`} href="/portal/">Open your member portal <span aria-hidden="true">&rarr;</span></a>
     {formUrl && (
       <a class={`${GHOST} mt-3`} href={formUrl} target="_blank" rel="noopener">Fill the interest form</a>
     )}
@@ -149,6 +150,16 @@ const SUBLINK = 'label text-[0.7rem]';
       show('busy');
     };
     const notLive = () => setNote('Verification is not live yet. Check back shortly.');
+
+    // Supabase email-auth errors are terse; translate the two common
+    // misconfigurations into fixes someone can actually act on.
+    const mapAuthError = (msg: string) => {
+      if (/rate limit/i.test(msg))
+        return "Email rate limit hit. Supabase's built-in mailer allows very few emails per hour. Set up custom SMTP (see docs/PORTAL.md) or use Google sign-in.";
+      if (/signups not allowed/i.test(msg))
+        return 'Email sign-ups are disabled in Supabase Auth settings. Enable the Email provider and sign-ups, or use Google.';
+      return msg;
+    };
 
     async function ensureSupa() {
       if (supa !== undefined) return supa;
@@ -225,7 +236,7 @@ const SUBLINK = 'label text-[0.7rem]';
       });
       if (error) {
         show('choose');
-        setNote(error.message || 'Could not send the link. Try again.');
+        setNote(mapAuthError(error.message || '') || 'Could not send the link. Try again.');
       } else {
         setEmail(email);
         show('codeSent');
@@ -236,11 +247,15 @@ const SUBLINK = 'label text-[0.7rem]';
       const client = await ensureSupa();
       if (!client) return notLive();
       setNote('Sending a new link...');
-      await client.auth.signInWithOtp({
+      const { error } = await client.auth.signInWithOtp({
         email,
         options: { shouldCreateUser: true, emailRedirectTo: `${location.origin}/join` },
       });
-      setNote('New link sent.');
+      setNote(
+        error
+          ? mapAuthError(error.message || '') || 'Could not send the link. Try again.'
+          : 'New link sent.'
+      );
     });
 
     root.querySelectorAll('[data-vg-reset]').forEach((b) =>
