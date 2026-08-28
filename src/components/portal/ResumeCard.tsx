@@ -95,7 +95,7 @@ export default function ResumeCard({ school }: { school: string }) {
       setResume(info);
       setConfirmRemove(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload did not go through. Try again.');
+      setError((err as { message?: string })?.message || 'Upload did not go through. Try again.');
     } finally {
       setUploadingName(null);
     }
@@ -108,7 +108,7 @@ export default function ResumeCard({ school }: { school: string }) {
       await store.removeResume();
       setResume(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not remove it. Try again.');
+      setError((err as { message?: string })?.message || 'Could not remove it. Try again.');
     } finally {
       setConfirmRemove(false);
     }
