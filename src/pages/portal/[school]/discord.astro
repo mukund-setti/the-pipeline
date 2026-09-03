@@ -1,0 +1,109 @@
+---
+/**
+ * Discord page: the chapter's live Discord channel embedded in the portal via
+ * WidgetBot, served per chapter at /portal/<school>/discord/.
+ *
+ * Why an embed and not another island: the community already lives in Discord.
+ * This mirrors one public channel into the portal so members do not have to
+ * leave to read it, rather than duplicating the conversation in our own store.
+ *
+ * Access note: a WidgetBot embed renders whatever an unauthenticated Discord
+ * user could see, so it is NOT protected by our auth the way ChatApp's
+ * Supabase rows are (RLS). Two things keep it honest: the iframe src is only
+ * set after the shell's guard lifts the veil (below), so a redirected visitor
+ * never loads it; and the channel you point this at should be one you are
+ * comfortable treating as public. Do not embed a private officers channel.
+ */
+import PortalShell from '../../../components/portal/PortalShell.astro';
+import { PORTAL_SCHOOLS, schoolBySlug } from '../../../lib/schools';
+
+export function getStaticPaths() {
+  return PORTAL_SCHOOLS.map((s) => ({ params: { school: s.slug } }));
+}
+
+const school = schoolBySlug(Astro.params.school as string)!;
+
+// Both IDs are public by nature: they travel in the iframe URL. They are env
+// vars rather than literals so the server/channel can differ per deployment
+// (and so a fork does not inherit our server).
+const SERVER_ID = import.meta.env.PUBLIC_WIDGETBOT_SERVER_ID;
+const CHANNEL_ID = import.meta.env.PUBLIC_WIDGETBOT_CHANNEL_ID;
+const configured = Boolean(SERVER_ID && CHANNEL_ID);
+
+const embedSrc = configured
+  ? `https://e.widgetbot.io/channels/${SERVER_ID}/${CHANNEL_ID}`
+  : '';
+---
+
+<PortalShell school={school} active="discord" title="Discord">
+  {
+    configured ? (
+      <div class="portal-discord">
+        <iframe
+          data-discord-embed
+          data-src={embedSrc}
+          title={`${school.short} Discord channel`}
+          allow="clipboard-write; fullscreen"
+          referrerpolicy="no-referrer"
+        ></iframe>
+
+        {/* Shown only if the embed never loads (WidgetBot down, blocked by an
+            extension, offline). Sits behind the iframe, so it is revealed
+            rather than toggled. */}
+        <div class="portal-discord-fallback" aria-hidden="true">
+          <p class="mb-1 font-display text-[1.05rem] font-semibold text-ink">
+            The chat embed didn't load.
+          </p>
+          <p class="text-[0.9rem] text-ink-soft">
+            A content blocker or a WidgetBot outage will do this. The Discord itself is fine —
+            open it from the app.
+          </p>
+        </div>
+      </div>
+    ) : (
+      <div class="portal-discord">
+        <div class="portal-discord-fallback">
+          <p class="mb-1 font-display text-[1.05rem] font-semibold text-ink">
+            Discord embed not configured.
+          </p>
+          <p class="text-[0.9rem] text-ink-soft">
+            Set <code class="rounded bg-white/60 px-1">PUBLIC_WIDGETBOT_SERVER_ID</code> and
+            <code class="rounded bg-white/60 px-1">PUBLIC_WIDGETBOT_CHANNEL_ID</code> in your env,
+            then invite the WidgetBot bot to the server. See
+            <code class="rounded bg-white/60 px-1">docs/DISCORD-EMBED.md</code>.
+          </p>
+        </div>
+      </div>
+    )
+  }
+</PortalShell>
+
+<script>
+  // Hold the embed until the shell's auth guard resolves. PortalShell puts
+  // data-hidden on the veil once guardPortal returns a member; anyone who
+  // fails the guard is redirected before that happens, so they never issue a
+  // request to WidgetBot at all.
+  const frame = document.querySelector<HTMLIFrameElement>('[data-discord-embed]');
+  const veil = document.querySelector('[data-veil]');
+
+  if (frame) {
+    const load = () => {
+      const src = frame.getAttribute('data-src');
+      // Guard against a second call: re-setting src would remount the chat and
+      // drop scroll position.
+      if (src && !frame.src) frame.src = src;
+    };
+
+    if (!veil || veil.hasAttribute('data-hidden')) {
+      load();
+    } else {
+      const obs = new MutationObserver(() => {
+        if (veil.hasAttribute('data-hidden')) {
+          obs.disconnect();
+          load();
+        }
+      });
+      obs.observe(veil, { attributes: true, attributeFilter: ['data-hidden'] });
+    }
+  }
+</script>
