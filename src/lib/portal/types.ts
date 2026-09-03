@@ -70,6 +70,31 @@ export type ResumeInfo = {
 export type JobAction = 'saved' | 'applied';
 export type JobActionMap = Record<string, Partial<Record<JobAction, boolean>>>;
 
+/**
+ * How far a member has gotten on something they applied to. Ordered, because
+ * the tracker sorts and renders stage chips in this sequence.
+ *
+ * Note the deliberate overlap with JobAction 'applied': a job_actions row with
+ * action='applied' is what puts a role in the tracker at all. This type only
+ * records how far it has since progressed, and a role with no stage row yet
+ * reads as 'applied'. Keeping one source of truth for "am I tracking this"
+ * means the two can never drift, and every mark made before the tracker
+ * existed shows up in it without a migration.
+ */
+export const APPLICATION_STAGES = ['applied', 'interview', 'offer', 'rejected'] as const;
+export type ApplicationStage = (typeof APPLICATION_STAGES)[number];
+
+/** A member's progress on one role they applied to. */
+export type JobApplication = {
+  stage: ApplicationStage;
+  /** Free-text member note: recruiter name, next step, whatever helps. */
+  note: string;
+  /** When the stage last moved; the tracker sorts on this. */
+  updatedAt: string;
+};
+
+export type JobApplicationMap = Record<string, JobApplication>;
+
 export type Opportunity = {
   id: string;
   title: string;

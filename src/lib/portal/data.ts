@@ -18,8 +18,10 @@ import type {
   ChatMessage,
   ForumPost,
   ForumReply,
+  ApplicationStage,
   JobAction,
   JobActionMap,
+  JobApplicationMap,
   Opportunity,
   PortalUser,
   ResumeInfo,
@@ -27,7 +29,10 @@ import type {
 import { channelsForSchool } from './types';
 
 const DEMO_SESSION_KEY = 'pipeline-portal-demo';
-const DEMO_DATA_KEY = 'pipeline-portal-demo-data-v2';
+// v3: the seed gained `actions` + `applications` for the tracker. Bumping the
+// key re-seeds anyone holding a v2 blob rather than showing them an empty
+// tracker built from data that predates it.
+const DEMO_DATA_KEY = 'pipeline-portal-demo-data-v3';
 
 export interface PortalStore {
   /** True when backed by Supabase; false = demo/sample data. */
@@ -48,6 +53,17 @@ export interface PortalStore {
   /** Saved/applied marks keyed by opportunity id. */
   listActions(): Promise<JobActionMap>;
   setAction(opportunityId: string, action: JobAction, on: boolean): Promise<void>;
+  /**
+   * Pipeline stages for applied roles, keyed by opportunity id. Sparse: an
+   * applied role with no entry here is still at stage 'applied'.
+   */
+  listApplications(): Promise<JobApplicationMap>;
+  /** Move a role to a stage, optionally updating its note. */
+  setApplicationStage(
+    opportunityId: string,
+    stage: ApplicationStage,
+    note?: string
+  ): Promise<void>;
 }
 
 export type PortalData = {
@@ -456,7 +472,51 @@ class SupabaseStore implements PortalStore {
         .delete()
         .match({ user_id: this.user.id, opportunity_id: opportunityId, action });
       if (error) throw error;
+      // Un-applying takes the role out of the tracker, so its stage goes with
+      // it. Leaving an orphan row would resurrect the old stage if the member
+      // ever marked the same role applied again.
+      if (action === 'applied') {
+        await this.supa
+          .from('job_applications')
+          .delete()
+          .match({ user_id: this.user.id, opportunity_id: opportunityId });
+      }
     }
+  }
+
+  async listApplications(): Promise<JobApplicationMap> {
+    const { data, error } = await this.supa
+      .from('job_applications')
+      .select('opportunity_id, stage, note, updated_at');
+    if (error) throw error;
+    const map: JobApplicationMap = {};
+    for (const row of data ?? []) {
+      map[row.opportunity_id] = {
+        stage: row.stage as ApplicationStage,
+        note: row.note ?? '',
+        updatedAt: row.updated_at,
+      };
+    }
+    return map;
+  }
+
+  async setApplicationStage(
+    opportunityId: string,
+    stage: ApplicationStage,
+    note?: string
+  ): Promise<void> {
+    if (opportunityId.startsWith('seed-')) throw new Error('Sample rows cannot be tracked.');
+    const row: Record<string, unknown> = {
+      user_id: this.user.id,
+      opportunity_id: opportunityId,
+      stage,
+      updated_at: new Date().toISOString(),
+    };
+    // Only send note when the caller meant to change it, so moving a stage
+    // does not wipe a note the member wrote earlier.
+    if (note !== undefined) row.note = note;
+    const { error } = await this.supa.from('job_applications').upsert(row);
+    if (error) throw error;
   }
 }
 
@@ -469,6 +529,7 @@ type DemoData = {
   /** Demo resume keeps metadata only; no file is stored. */
   resume?: { name: string; updatedAt: string } | null;
   actions?: JobActionMap;
+  applications?: JobApplicationMap;
 };
 
 function uid(): string {
@@ -625,6 +686,27 @@ class DemoStore implements PortalStore {
     if (on) entry[action] = true;
     else delete entry[action];
     if (!entry.saved && !entry.applied) delete actions[opportunityId];
+    // Mirrors the Supabase store: dropping the applied mark drops the stage.
+    if (action === 'applied' && !on) delete this.data.applications?.[opportunityId];
+    this.save(this.data);
+  }
+
+  async listApplications(): Promise<JobApplicationMap> {
+    return { ...(this.data.applications ?? {}) };
+  }
+
+  async setApplicationStage(
+    opportunityId: string,
+    stage: ApplicationStage,
+    note?: string
+  ): Promise<void> {
+    const apps = (this.data.applications ??= {});
+    const prev = apps[opportunityId];
+    apps[opportunityId] = {
+      stage,
+      note: note !== undefined ? note : (prev?.note ?? ''),
+      updatedAt: new Date().toISOString(),
+    };
     this.save(this.data);
   }
 }
@@ -774,7 +856,37 @@ function seedDemoData(school: PortalSchoolSlug): DemoData {
     900
   );
 
-  return { messages, posts, replies };
+  // A few roles already applied to, spread across the stages, so the tracker
+  // has something to show in a demo session instead of an empty state. Ids
+  // must match seedOpportunities().
+  const actions: JobActionMap = {
+    'seed-amazon-internship': { applied: true },
+    'seed-capital-one-internship': { applied: true, saved: true },
+    'seed-google-internship': { applied: true },
+    'seed-bloomberg-internship': { applied: true },
+    'seed-nvidia-internship': { saved: true },
+  };
+  const applications: JobApplicationMap = {
+    'seed-capital-one-internship': {
+      stage: 'interview',
+      note: 'Power day scheduled. Two behavioral, one case.',
+      updatedAt: minsAgo(60 * 20),
+    },
+    'seed-google-internship': {
+      stage: 'rejected',
+      note: 'No response after the OA.',
+      updatedAt: minsAgo(60 * 96),
+    },
+    'seed-bloomberg-internship': {
+      stage: 'offer',
+      note: 'Verbal offer, deciding by the 15th.',
+      updatedAt: minsAgo(60 * 5),
+    },
+    // seed-amazon-internship deliberately has no row: it exercises the
+    // "applied with no stage yet" path the tracker has to handle.
+  };
+
+  return { messages, posts, replies, actions, applications };
 }
 
 export function seedOpportunities(): Opportunity[] {

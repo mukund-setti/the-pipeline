@@ -453,3 +453,47 @@ drop policy if exists "job_actions: delete own" on public.job_actions;
 create policy "job_actions: delete own"
   on public.job_actions for delete to authenticated
   using (user_id = (select auth.uid()));
+
+-- ------------------------------------------------------------
+-- Job applications: per-member pipeline stage on an applied role
+--
+-- A job_actions row with action='applied' is what puts a role in the
+-- member's tracker. This table records only how far it has progressed
+-- since, so the two cannot drift and roles marked applied before the
+-- tracker shipped appear in it with no backfill (a missing row reads as
+-- stage 'applied'). Rows here are per-member and RLS-scoped exactly like
+-- job_actions.
+-- ------------------------------------------------------------
+create table if not exists public.job_applications (
+  user_id        uuid not null references auth.users (id) on delete cascade,
+  opportunity_id uuid not null references public.opportunities (id) on delete cascade,
+  stage          text not null default 'applied'
+                   check (stage in ('applied', 'interview', 'offer', 'rejected')),
+  note           text not null default '',
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now(),
+  primary key (user_id, opportunity_id)
+);
+
+alter table public.job_applications enable row level security;
+
+drop policy if exists "job_applications: read own" on public.job_applications;
+create policy "job_applications: read own"
+  on public.job_applications for select to authenticated
+  using (user_id = (select auth.uid()));
+
+drop policy if exists "job_applications: create own" on public.job_applications;
+create policy "job_applications: create own"
+  on public.job_applications for insert to authenticated
+  with check (user_id = (select auth.uid()) and public.is_portal_member());
+
+drop policy if exists "job_applications: update own" on public.job_applications;
+create policy "job_applications: update own"
+  on public.job_applications for update to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+drop policy if exists "job_applications: delete own" on public.job_applications;
+create policy "job_applications: delete own"
+  on public.job_applications for delete to authenticated
+  using (user_id = (select auth.uid()));
