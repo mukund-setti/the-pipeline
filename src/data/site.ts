@@ -223,8 +223,11 @@ export const expectations: string[] = [
 export const voice = {
   thesis: 'The talent was never the problem.',
   thesisTail: 'They called us the pipeline problem. We decided to be the pipeline.',
-  /** Brand tagline; "Together." is appended in gold where it renders. */
-  tagline: 'Building. Growing. Learning.',
+  /** Brand tagline; "Together." is appended in gold where it renders.
+   *  Reuses the three-stage triad the rest of the site already speaks in
+   *  (see `stages` and the How It Works section head) so the footer lands on
+   *  our own language instead of generic gerunds. */
+  tagline: 'Get in. Get sharp. Get the offer.',
 } as const;
 
 export const footer = {
