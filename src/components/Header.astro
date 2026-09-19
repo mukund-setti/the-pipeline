@@ -8,48 +8,47 @@ const isActive = (href: string) => {
   return path === h;
 };
 ---
-<header
-  class="sticky top-0 z-50 border-b border-line bg-surface/90 backdrop-blur supports-[backdrop-filter]:bg-surface/80"
->
-  <div class="wrap">
-    <nav
-      class="flex h-[68px] items-center justify-between gap-4 max-[620px]:h-auto max-[620px]:flex-wrap max-[620px]:py-3"
-      aria-label="Primary"
+{/* One floating pill nav for the whole site (the landing page included),
+    so centering and sizing never drift between pages. */}
+{/* Full-width flex wrapper centers the pill without capping its
+    shrink-to-fit width (left:50% centering makes links wrap mid-width). */}
+<header class="pointer-events-none fixed inset-x-0 top-[22px] z-50 flex justify-center px-4">
+  <nav
+    class="pointer-events-auto flex max-w-full items-center gap-1.5 rounded-pill bg-surface py-2 pl-4 pr-2.5 shadow-[0_10px_30px_rgba(28,74,18,0.28)]"
+    aria-label="Primary"
+  >
+    <a
+      href="/"
+      class="mr-2 inline-flex items-center gap-2 whitespace-nowrap font-display text-[17px] font-bold tracking-tight text-gold-deep"
+      aria-label="The Pipeline, home"
     >
-      <a
-        href="/"
-        class="inline-flex items-center gap-2.5 font-display text-[1.1rem] font-bold tracking-tight text-gold-deep"
-        aria-label="The Pipeline, home"
-      >
-        <Mark size={30} />
-        The Pipeline
-      </a>
+      <Mark size={24} />
+      The Pipeline
+    </a>
 
-      <div class="flex items-center gap-1 max-[620px]:w-full max-[620px]:justify-start">
-        {
-          nav.map((item) => (
-            <a
-              href={item.href}
-              class:list={[
-                'rounded-pill px-3.5 py-2 text-[14px] font-semibold transition-colors',
-                isActive(item.href)
-                  ? 'bg-brand-soft text-gold-deep'
-                  : 'text-ink hover:bg-brand-soft/70',
-              ]}
-              aria-current={isActive(item.href) ? 'page' : undefined}
-            >
-              {item.label}
-            </a>
-          ))
-        }
-        <a
-          href={navCta.href}
-          class="lift-sm ml-2 inline-flex h-9 items-center rounded-pill bg-gold-bright px-5 text-[14px] font-bold text-canopy transition-colors hover:bg-gold-pale"
-          aria-current={isActive(navCta.href) ? 'page' : undefined}
-        >
-          {navCta.label}
-        </a>
-      </div>
-    </nav>
-  </div>
+    <div class="flex items-center gap-0.5 max-[680px]:hidden">
+      {
+        nav.map((item) => (
+          <a
+            href={item.href}
+            class:list={[
+              'whitespace-nowrap rounded-pill px-3.5 py-2 text-[14.5px] font-bold transition-colors',
+              isActive(item.href) ? 'bg-brand-soft text-gold-deep' : 'text-ink-2 hover:bg-gold/40',
+            ]}
+            aria-current={isActive(item.href) ? 'page' : undefined}
+          >
+            {item.label}
+          </a>
+        ))
+      }
+    </div>
+
+    <a
+      href={navCta.href}
+      class="ml-1 rounded-pill bg-gold px-[18px] py-[9px] text-[14.5px] font-bold text-ink-2 transition-colors hover:bg-gold-bright hover:text-white"
+      aria-current={isActive(navCta.href) ? 'page' : undefined}
+    >
+      {navCta.label}
+    </a>
+  </nav>
 </header>

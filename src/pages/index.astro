@@ -1,6 +1,6 @@
 ---
 import Layout from '../components/Layout.astro';
-import { site, nav, navCta, stages, stats, footer, placements } from '../data/site';
+import { site, stages, stats, footer, placements } from '../data/site';
 
 // Fonts come from Layout (Baloo 2 + Quicksand, self-hosted).
 
@@ -158,17 +158,6 @@ const drops = [
         </g>
       </defs>
     </svg>
-
-    <nav class="pill-nav" aria-label="Main">
-      <a class="nav-brand" href="/">
-        <svg aria-hidden="true"><use href="#sprout-mark"/></svg>
-        The Pipeline
-      </a>
-      <div class="nav-links">
-        {nav.map((item) => <a href={item.href}>{item.label}</a>)}
-      </div>
-      <a class="nav-join" href={navCta.href}>{navCta.label}</a>
-    </nav>
 
     <section class="hero">
       {/* With the plant story on, the watermark is the seed it grows from. */}
@@ -400,65 +389,10 @@ const drops = [
     color: #fff;
   }
 
-  /* ---------- white pill nav ---------- */
-  .pill-nav {
-    position: fixed;
-    top: 22px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--cream);
-    border-radius: var(--radius-pill);
-    padding: 8px 10px 8px 16px;
-    box-shadow: 0 10px 30px rgba(28, 74, 18, 0.28);
-    max-width: calc(100vw - 32px);
-  }
-  .nav-brand {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-family: 'Baloo 2', ui-sans-serif, system-ui, sans-serif;
-    font-weight: 700;
-    font-size: 17px;
-    color: var(--sprout-deep);
-    text-decoration: none;
-    margin-right: 8px;
-    white-space: nowrap;
-  }
-  .nav-brand svg { width: 24px; height: 26px; }
-  .nav-links { display: flex; gap: 2px; }
-  .nav-links a {
-    text-decoration: none;
-    color: var(--fern);
-    font-weight: 700;
-    font-size: 14.5px;
-    padding: 8px 14px;
-    border-radius: var(--radius-pill);
-    transition: background 0.18s ease;
-  }
-  .nav-links a:hover { background: rgba(166, 225, 122, 0.4); }
-  .nav-links a:focus-visible,
-  .nav-brand:focus-visible,
-  .btn:focus-visible,
-  .nav-join:focus-visible {
+  .btn:focus-visible {
     outline: 3px solid var(--fern);
     outline-offset: 2px;
   }
-  .nav-join {
-    font-weight: 700;
-    font-size: 14.5px;
-    color: var(--fern);
-    background: var(--lime);
-    border-radius: var(--radius-pill);
-    padding: 9px 18px;
-    text-decoration: none;
-    margin-left: 4px;
-    transition: background 0.18s ease;
-  }
-  .nav-join:hover { background: var(--sprout); color: #fff; }
 
   /* ---------- hero ---------- */
   .hero {
@@ -791,7 +725,6 @@ const drops = [
     .roots .leaf { display: none; }
   }
   @media (max-width: 680px) {
-    .nav-links { display: none; }
     .watermark { width: 52vw; right: -14vw; opacity: 0.12; }
     .drop:nth-child(n + 3) { display: none; }
   }

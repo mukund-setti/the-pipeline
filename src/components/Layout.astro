@@ -20,7 +20,8 @@ interface Props {
   ogTitle?: string;
   ogDescription?: string;
   noindex?: boolean;
-  /** Skip the shared Header/Footer for pages that bring their own chrome. */
+  /** Full-bleed pages (the landing): no Footer, no top padding under the
+   *  floating header. The pill Header itself renders on every page. */
   bare?: boolean;
   /** Per-page browser chrome color; defaults to the site-wide one. */
   themeColor?: string;
@@ -77,8 +78,10 @@ const ogDescriptionFinal = ogDescription ?? description;
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    {!bare && <Header />}
-    <main id="main">
+    <Header />
+    {/* The floating pill header takes no flow space; bare pages (the
+        landing) manage their own top spacing under it. */}
+    <main id="main" class={bare ? undefined : 'pt-[92px]'}>
       <slot />
     </main>
     {!bare && <Footer />}
