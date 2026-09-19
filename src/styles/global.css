@@ -47,11 +47,11 @@
   }
 
   ::selection {
-    background: #2c4434;
-    color: #f2dca4;
+    background: #2e6b1c;
+    color: #e9fbd8;
   }
 
-  /* Visible focus everywhere: warm gold ring, rounded. */
+  /* Visible focus everywhere: sprout ring, rounded. */
   :where(a, button, input, summary, [tabindex]):focus-visible {
     outline: 2px solid theme(colors.gold.deep);
     outline-offset: 3px;
@@ -74,22 +74,22 @@
     @apply font-sans text-eyebrow font-semibold uppercase;
   }
 
-  /* Sun through canopy: a soft warm shaft of light for dark bands. Give the
+  /* Light through leaves: a soft lime shaft for dark fern bands. Give the
      parent position:relative + overflow-hidden and drop this in. */
   .light-shaft {
     position: absolute;
     inset: 0;
     pointer-events: none;
     background:
-      radial-gradient(ellipse 60% 90% at 78% -10%, rgba(217, 168, 76, 0.28), transparent 60%),
-      radial-gradient(ellipse 40% 60% at 62% -5%, rgba(242, 220, 164, 0.14), transparent 55%),
-      linear-gradient(112deg, transparent 46%, rgba(217, 168, 76, 0.055) 55%, transparent 68%);
+      radial-gradient(ellipse 60% 90% at 78% -10%, rgba(166, 225, 122, 0.26), transparent 60%),
+      radial-gradient(ellipse 40% 60% at 62% -5%, rgba(205, 240, 169, 0.13), transparent 55%),
+      linear-gradient(112deg, transparent 46%, rgba(166, 225, 122, 0.05) 55%, transparent 68%);
   }
   .light-shaft-soft {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: radial-gradient(ellipse 55% 70% at 80% -12%, rgba(217, 168, 76, 0.16), transparent 62%);
+    background: radial-gradient(ellipse 55% 70% at 80% -12%, rgba(166, 225, 122, 0.15), transparent 62%);
   }
 
   /* Skip link, visible only on focus. */
@@ -124,19 +124,18 @@
     transform: translateX(3px);
   }
 
-  /* Golden word: the banner's "Together." treatment. A warm gradient fill on
-     a display-italic word inside a heading. */
+  /* Highlight word: a fresh lime gradient fill inside a heading. (Class name
+     kept from the gold era so no page needs edits; tokens do the retoning.
+     No italic: the rounded display face carries the emphasis by itself.) */
   .hl-gold {
-    background-image: linear-gradient(100deg, theme(colors.gold.deep) 0%, theme(colors.gold.DEFAULT) 45%, theme(colors.gold.pale) 100%);
+    background-image: linear-gradient(100deg, theme(colors.gold.bright) 0%, theme(colors.gold.DEFAULT) 45%, theme(colors.gold.pale) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    font-style: italic;
   }
-  /* On daylight sections gold needs to stay deep to hold contrast. */
+  /* On cream sections the highlight stays deep to hold contrast. */
   .hl {
     color: theme(colors.gold.deep);
-    font-style: italic;
   }
 
   /* Signature conduit: a warm dotted path flowing toward a glowing gold

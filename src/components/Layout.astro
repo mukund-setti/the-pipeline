@@ -1,13 +1,12 @@
 ---
 // Self-hosted fonts, latin subset only (no network round-trip, minimal CSS).
-import '@fontsource/fraunces/latin-500.css';
-import '@fontsource/fraunces/latin-600.css';
-import '@fontsource/fraunces/latin-500-italic.css';
-import '@fontsource/fraunces/latin-600-italic.css';
-import '@fontsource/instrument-sans/latin-400.css';
-import '@fontsource/instrument-sans/latin-500.css';
-import '@fontsource/instrument-sans/latin-600.css';
-import '@fontsource/instrument-sans/latin-700.css';
+import '@fontsource/baloo-2/latin-600.css';
+import '@fontsource/baloo-2/latin-700.css';
+import '@fontsource/baloo-2/latin-800.css';
+import '@fontsource/quicksand/latin-400.css';
+import '@fontsource/quicksand/latin-500.css';
+import '@fontsource/quicksand/latin-600.css';
+import '@fontsource/quicksand/latin-700.css';
 import '../styles/global.css';
 
 import Header from './Header.astro';
@@ -21,9 +20,21 @@ interface Props {
   ogTitle?: string;
   ogDescription?: string;
   noindex?: boolean;
+  /** Skip the shared Header/Footer for pages that bring their own chrome. */
+  bare?: boolean;
+  /** Per-page browser chrome color; defaults to the site-wide one. */
+  themeColor?: string;
 }
 
-const { title, description, ogTitle, ogDescription, noindex = false } = Astro.props;
+const {
+  title,
+  description,
+  ogTitle,
+  ogDescription,
+  noindex = false,
+  bare = false,
+  themeColor = site.themeColor,
+} = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 // Named per design cut (not og.png) so social scrapers that cache by image
@@ -39,7 +50,7 @@ const ogDescriptionFinal = ogDescription ?? description;
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <meta name="theme-color" content={site.themeColor} />
+    <meta name="theme-color" content={themeColor} />
     {noindex && <meta name="robots" content="noindex, follow" />}
     <link rel="canonical" href={canonical} />
 
@@ -66,10 +77,10 @@ const ogDescriptionFinal = ogDescription ?? description;
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    <Header />
+    {!bare && <Header />}
     <main id="main">
       <slot />
     </main>
-    <Footer />
+    {!bare && <Footer />}
   </body>
 </html>

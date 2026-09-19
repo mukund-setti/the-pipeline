@@ -13,7 +13,7 @@ export const site = {
   title: 'The Pipeline',
   location: 'University of California',
   established: '2026',
-  themeColor: '#0F1912', // keep in sync with canopy.DEFAULT in tailwind.config.ts (a <meta> needs a literal)
+  themeColor: '#FBFFF4', // keep in sync with surface in tailwind.config.ts (a <meta> needs a literal)
   /** Default meta description (homepage + OG fallback). */
   description:
     'A fellow-run community across the UC system moving underrepresented undergrads in tech into the rooms they were kept out of, through gatekept job drops, resume reviews, and mock interviews run by people who have already landed.',

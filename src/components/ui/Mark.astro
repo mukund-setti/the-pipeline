@@ -1,10 +1,10 @@
 ---
 /**
- * The Pipeline logo: a sprout rising out of an open conduit. The cup is the
- * pipeline (access, handed over); the sprout is the fellow growing up through
- * it. Sunlight gold on a deep canopy tile, so it stays legible on both the
- * dark header and footer and any light surface. Brand asset, so literal
- * colors are sanctioned.
+ * The Pipeline logo: a sprout whose roots are circuit traces ending in node
+ * dots. The sprout is the fellow growing; the routed roots are the pipeline
+ * carrying access to them. Drawn in brand greens so it reads on both the
+ * cream header and the deep fern footer. Brand asset, so literal colors are
+ * sanctioned.
  */
 interface Props {
   size?: number;
@@ -13,19 +13,27 @@ interface Props {
 const { size = 32, class: className = '' } = Astro.props;
 ---
 <span
-  class:list={['inline-grid flex-none place-items-center overflow-hidden bg-canopy-2 ring-1 ring-white/10', className]}
-  style={`width:${size}px;height:${size}px;border-radius:30%`}
+  class:list={['inline-grid flex-none place-items-center', className]}
+  style={`width:${size}px;height:${Math.round(size * 1.08)}px`}
   aria-hidden="true"
 >
-  <svg viewBox="0 0 100 100" class="h-full w-full" xmlns="http://www.w3.org/2000/svg">
-    <g fill="none" stroke="#D9A84C" stroke-width="7" stroke-linecap="round">
-      <!-- The open conduit -->
-      <path d="M34 62 a16 16 0 0 0 32 0"></path>
-      <!-- The stem -->
-      <path d="M50 70 V42"></path>
+  <svg viewBox="0 0 120 130" class="h-full w-full" xmlns="http://www.w3.org/2000/svg">
+    <!-- Circuit-trace roots -->
+    <g fill="none" stroke="#A6E17A" stroke-width="7" stroke-linecap="round">
+      <path d="M60 78 H106"></path>
+      <path d="M60 78 V96 L46 112"></path>
+      <path d="M60 96 L76 106"></path>
+      <path d="M60 78 L38 90"></path>
     </g>
-    <!-- Leaves: lower-left, upper-right -->
-    <path d="M50 52 C48 41 42 33 29 30 C31 42 39 50 50 52 Z" fill="#D9A84C"></path>
-    <path d="M50 43 C52 31 59 23 71 20 C69 33 61 41 50 43 Z" fill="#E8BE6A"></path>
+    <g fill="#A6E17A">
+      <circle cx="110" cy="78" r="5"></circle>
+      <circle cx="43" cy="115" r="5"></circle>
+      <circle cx="79" cy="108" r="5"></circle>
+      <circle cx="34" cy="92" r="5"></circle>
+    </g>
+    <!-- Stem and leaves -->
+    <path d="M60 40 V78" fill="none" stroke="#53B72A" stroke-width="11" stroke-linecap="round"></path>
+    <path d="M60 40 C57 24 48 10 30 5 C32 23 44 36 60 40 Z" fill="#4DAE2A"></path>
+    <path d="M62 46 C70 33 85 25 103 27 C96 42 80 50 62 46 Z" fill="#8FD460"></path>
   </svg>
 </span>

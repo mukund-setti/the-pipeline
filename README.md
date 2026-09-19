@@ -58,7 +58,8 @@ src/
   data/site.ts          single source of truth for copy + data
   styles/global.css     @tailwind + base + grain/light effects + reduced-motion
 public/                 favicon.svg, og-canopy.png, robots.txt
-scripts/                make-og.mjs (OG image), shoot.mjs/verify.mjs (QA screenshots)
+  brand/                logo kit (mark on tile/white/transparent, wordmarks; PNG + SVG)
+scripts/                make-og.mjs (OG image), make-brand.mjs (logo kit), shoot.mjs/verify.mjs (QA screenshots)
 prototype/              the original hand-built HTML/CSS reference (not deployed)
 ```
 

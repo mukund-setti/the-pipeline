@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" role="img" aria-label="The Pipeline">
+  <rect width="100" height="100" rx="26" fill="#0F1912"/>
+  <g fill="none" stroke="#D9A84C" stroke-width="7" stroke-linecap="round">
+    <path d="M34 62 a16 16 0 0 0 32 0"/>
+    <path d="M50 70 V42"/>
+  </g>
+  <path d="M50 52 C48 41 42 33 29 30 C31 42 39 50 50 52 Z" fill="#D9A84C"/>
+  <path d="M50 43 C52 31 59 23 71 20 C69 33 61 41 50 43 Z" fill="#E8BE6A"/>
+</svg>

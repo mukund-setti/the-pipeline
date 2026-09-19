@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pipeline · Option C · Pop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sprout: #53B72A;
+    --sprout-deep: #3E9B1F;
+    --lime: #A6E17A;
+    --fern: #1C4A12;
+    --cream: #FBFFF4;
+    --radius-pill: 999px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: "Quicksand", sans-serif;
+    color: #fff;
+    background:
+      radial-gradient(ellipse 90% 70% at 50% -10%, #66C63C 0%, rgba(102,198,60,0) 60%),
+      var(--sprout);
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* giant watermark sprout, bottom right */
+  .watermark {
+    position: absolute;
+    right: -6vw;
+    bottom: 4vh;
+    width: 46vw;
+    max-width: 560px;
+    opacity: 0.16;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* floating lime seeds */
+  .seed {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--lime);
+    opacity: 0.35;
+    pointer-events: none;
+    animation: bob 7s ease-in-out infinite alternate;
+  }
+  .seed.s1 { width: 22px; height: 22px; left: 12vw; top: 24vh; }
+  .seed.s2 { width: 12px; height: 12px; left: 22vw; top: 66vh; animation-delay: 1.4s; }
+  .seed.s3 { width: 16px; height: 16px; right: 20vw; top: 20vh; animation-delay: 0.8s; }
+  .seed.s4 { width: 10px; height: 10px; right: 30vw; top: 58vh; animation-delay: 2.2s; }
+  @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-26px); } }
+
+  /* ---------- white pill nav ---------- */
+  nav {
+    position: fixed;
+    top: 22px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--cream);
+    border-radius: var(--radius-pill);
+    padding: 8px 10px 8px 16px;
+    box-shadow: 0 10px 30px rgba(28, 74, 18, 0.28);
+    max-width: calc(100vw - 32px);
+  }
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: "Baloo 2", sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--sprout-deep);
+    margin-right: 8px;
+    white-space: nowrap;
+  }
+  .nav-brand svg { width: 24px; height: 26px; }
+  .nav-links { display: flex; gap: 2px; }
+  .nav-links a {
+    text-decoration: none;
+    color: var(--fern);
+    font-weight: 700;
+    font-size: 14.5px;
+    padding: 8px 14px;
+    border-radius: var(--radius-pill);
+    transition: background 0.18s ease;
+  }
+  .nav-links a:hover { background: rgba(166, 225, 122, 0.4); }
+  .nav-links a:focus-visible, .btn:focus-visible, .nav-join:focus-visible {
+    outline: 3px solid var(--fern);
+    outline-offset: 2px;
+  }
+  .nav-join {
+    font-family: "Quicksand", sans-serif;
+    font-weight: 700;
+    font-size: 14.5px;
+    color: #fff;
+    background: var(--sprout);
+    border: none;
+    border-radius: var(--radius-pill);
+    padding: 9px 18px;
+    cursor: pointer;
+    margin-left: 4px;
+    transition: background 0.18s ease;
+  }
+  .nav-join:hover { background: var(--sprout-deep); }
+
+  /* ---------- hero ---------- */
+  main {
+    position: relative;
+    z-index: 5;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 20px;
+  }
+  h1 {
+    font-family: "Baloo 2", sans-serif;
+    font-weight: 800;
+    font-size: clamp(72px, 14vw, 160px);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    color: #fff;
+    text-shadow: 0 6px 0 rgba(28, 74, 18, 0.25);
+  }
+  .underline {
+    width: clamp(180px, 32vw, 380px);
+    margin-top: 6px;
+  }
+  .tagline {
+    font-size: clamp(16px, 2.2vw, 20px);
+    font-weight: 600;
+    color: var(--cream);
+    max-width: 480px;
+    margin-top: 20px;
+  }
+  .cta-row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-top: 34px; }
+  .btn {
+    font-family: "Quicksand", sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    border-radius: var(--radius-pill);
+    padding: 16px 34px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
+  }
+  .btn-join {
+    color: var(--sprout-deep);
+    background: var(--cream);
+    border: none;
+    box-shadow: 0 10px 26px rgba(28, 74, 18, 0.3);
+  }
+  .btn-join:hover { background: var(--lime); color: var(--fern); transform: translateY(-2px); }
+  .btn-learn {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.65);
+  }
+  .btn-learn:hover { background: rgba(255, 255, 255, 0.22); transform: translateY(-2px); }
+
+  /* ---------- marquee ticker ---------- */
+  .ticker {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    z-index: 6;
+    background: var(--lime);
+    color: var(--fern);
+    overflow: hidden;
+    padding: 13px 0;
+    font-family: "Baloo 2", sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: 0.04em;
+  }
+  .ticker-track {
+    display: flex;
+    width: max-content;
+    animation: scroll 22s linear infinite;
+  }
+  .ticker-track span { padding: 0 18px; white-space: nowrap; }
+
+  @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  @media (max-width: 620px) {
+    .nav-links { display: none; }
+    .watermark { width: 70vw; right: -18vw; opacity: 0.12; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .seed { animation: none; }
+    .ticker-track { animation: none; }
+    .btn, .nav-join { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <symbol id="sprout-mark" viewBox="0 0 120 130">
+        <g fill="none" stroke="#A6E17A" stroke-width="7" stroke-linecap="round">
+          <path d="M60 78 H106"/><path d="M60 78 V96 L46 112"/><path d="M60 96 L76 106"/><path d="M60 78 L38 90"/>
+        </g>
+        <g fill="#A6E17A">
+          <circle cx="110" cy="78" r="5"/><circle cx="43" cy="115" r="5"/><circle cx="79" cy="108" r="5"/><circle cx="34" cy="92" r="5"/>
+        </g>
+        <path d="M60 40 V78" fill="none" stroke="#53B72A" stroke-width="11" stroke-linecap="round"/>
+        <path d="M60 40 C57 24 48 10 30 5 C32 23 44 36 60 40 Z" fill="#4DAE2A"/>
+        <path d="M62 46 C70 33 85 25 103 27 C96 42 80 50 62 46 Z" fill="#8FD460"/>
+      </symbol>
+      <symbol id="sprout-mono" viewBox="0 0 120 130">
+        <g fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round">
+          <path d="M60 78 H106"/><path d="M60 78 V96 L46 112"/><path d="M60 96 L76 106"/><path d="M60 78 L38 90"/>
+        </g>
+        <g fill="#FFFFFF">
+          <circle cx="110" cy="78" r="5"/><circle cx="43" cy="115" r="5"/><circle cx="79" cy="108" r="5"/><circle cx="34" cy="92" r="5"/>
+        </g>
+        <path d="M60 40 V78" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round"/>
+        <path d="M60 40 C57 24 48 10 30 5 C32 23 44 36 60 40 Z" fill="#FFFFFF"/>
+        <path d="M62 46 C70 33 85 25 103 27 C96 42 80 50 62 46 Z" fill="#FFFFFF"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <svg class="watermark" aria-hidden="true"><use href="#sprout-mono"/></svg>
+  <div class="seed s1"></div>
+  <div class="seed s2"></div>
+  <div class="seed s3"></div>
+  <div class="seed s4"></div>
+
+  <nav>
+    <div class="nav-brand">
+      <svg><use href="#sprout-mark"/></svg>
+      The Pipeline
+    </div>
+    <div class="nav-links">
+      <a href="#">About</a>
+      <a href="#">Portals</a>
+      <a href="#">Opportunities</a>
+    </div>
+    <button class="nav-join">Join</button>
+  </nav>
+
+  <main>
+    <h1>Pipeline</h1>
+    <svg class="underline" viewBox="0 0 380 24" fill="none" aria-hidden="true">
+      <path d="M6 14 C 90 4, 190 22, 290 10 S 360 12, 374 10"
+            stroke="#A6E17A" stroke-width="8" stroke-linecap="round"/>
+    </svg>
+    <p class="tagline">One green thumb up for your career. Join the student network growing from campus to industry.</p>
+    <div class="cta-row">
+      <a class="btn btn-join" href="#">Join the Pipeline</a>
+      <a class="btn btn-learn" href="#">Learn more</a>
+    </div>
+  </main>
+
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track">
+      <span>grow</span><span>·</span><span>connect</span><span>·</span><span>get hired</span><span>·</span>
+      <span>UCI</span><span>·</span><span>UCLA</span><span>·</span><span>UCR</span><span>·</span>
+      <span>grow</span><span>·</span><span>connect</span><span>·</span><span>get hired</span><span>·</span>
+      <span>UCI</span><span>·</span><span>UCLA</span><span>·</span><span>UCR</span><span>·</span>
+    </div>
+  </div>
+
+</body>
+</html>

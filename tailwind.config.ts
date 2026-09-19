@@ -1,58 +1,59 @@
 import type { Config } from 'tailwindcss';
 
 /**
- * The Pipeline: "Canopy & Light" design tokens.
- * Deep forest canopy frames the site (header, hero, bands, footer); warm
- * daylight parchment carries the reading sections; one sunlit gold accent.
- * Discipline rule: `gold` = warmth, arrival, and the primary action. Green
- * holds structure. Nothing else gets to be loud.
+ * The Pipeline: "Sprout & Lime" design tokens (Sept 2026 rebrand).
+ * Bright sprout green carries the brand, lime is the accent, deep fern
+ * anchors dark bands and text, and a near-white green cream carries the
+ * reading sections. The old token NAMES are kept (canopy, gold, ...) so
+ * every component retones without edits: `canopy` now means deep fern,
+ * `gold` now means the lime/sprout accent family.
  */
 export default {
   content: ['./src/**/*.{astro,html,js,jsx,ts,tsx,md,mdx}'],
   theme: {
     extend: {
       colors: {
-        // ── Canopy & Light core ─────────────────────────────
+        // ── Sprout & Lime core (legacy names) ───────────────
         canopy: {
-          DEFAULT: '#0F1912', // deepest forest (hero, footer, bands)
-          2: '#16241A', // lifted dark surface (cards on canopy)
-          3: '#1E3024', // hover dark surface
+          DEFAULT: '#17380E', // deep fern (hero bands, footer)
+          2: '#1C4A12', // lifted dark surface (cards on fern)
+          3: '#265F17', // hover dark surface
         },
         gold: {
-          DEFAULT: '#D9A84C', // sunlight gold on dark (accents, links on canopy)
-          deep: '#A9781F', // gold that passes contrast on daylight
-          bright: '#E8BE6A', // primary button fill / gradient high end
-          pale: '#F2DCA4', // gradient light end ("Together." shimmer)
+          DEFAULT: '#A6E17A', // lime accent on dark (links, marks)
+          deep: '#3E9B1F', // sprout that passes contrast on cream
+          bright: '#53B72A', // primary button fill (sprout)
+          pale: '#CDF0A9', // gradient light end / button hover
         },
         // ── Legacy-named roles, retoned (low-touch aliases) ──
-        bg: '#F1EEE2', // daylight parchment (reading sections)
-        surface: '#FAF7EC', // cards, lifted panels on daylight
+        bg: '#F2F9EA', // pale leaf cream (reading sections)
+        surface: '#FBFFF4', // cards, lifted panels, header bar
         ink: {
-          DEFAULT: '#222B20', // loam: primary text on daylight
-          2: '#16241A', // = canopy.2
-          soft: '#5C6553', // moss grey: muted body text (AA on parchment)
+          DEFAULT: '#1E3315', // dark loam green: primary text on cream
+          2: '#1C4A12', // = canopy.2 (fern)
+          soft: '#587A4A', // muted moss body text (AA on cream)
         },
         line: {
-          DEFAULT: '#DCD6C2', // soft hairlines on daylight
-          strong: '#A9AE97', // hover border on daylight
-          dark: 'rgba(242,236,218,0.14)', // hairlines on canopy
+          DEFAULT: '#DCEBCB', // soft hairlines on cream
+          strong: '#A9C98F', // hover border on cream
+          dark: 'rgba(230,247,214,0.16)', // hairlines on fern
         },
         brand: {
-          DEFAULT: '#2C4434', // pine: secondary fills, chips
-          deep: '#22362A', // hover pine
-          soft: '#E6E4D0', // sage tint fills, callout bg
+          DEFAULT: '#2E6B1C', // mid green: secondary fills, chips
+          deep: '#245415', // hover green
+          soft: '#E6F5D5', // lime tint fills, callout bg
         },
-        signal: '#A9781F', // = gold.deep (arrival marks on light surfaces)
+        signal: '#3E9B1F', // = gold.deep (arrival marks on light surfaces)
         ondark: {
-          DEFAULT: '#F3EEDC', // warm cream text on canopy
-          soft: '#A8B29A', // muted sage text on canopy
-          link: '#D9A84C', // links on canopy (gold)
+          DEFAULT: '#F2FBEA', // pale cream text on fern
+          soft: '#AFD49B', // muted lime-sage text on fern
+          link: '#A6E17A', // links on fern (lime)
         },
       },
       fontFamily: {
-        display: ['Fraunces', 'Georgia', 'ui-serif', 'serif'],
-        sans: ['"Instrument Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        mono: ['"Instrument Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['"Baloo 2"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['Quicksand', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['Quicksand', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       // Type scale: fluid via clamp(), tuned for a serif display face.
       fontSize: {
@@ -88,8 +89,8 @@ export default {
         },
         // Soft breathing glow for the conduit arrival tip.
         glow: {
-          '0%, 100%': { boxShadow: '0 0 0 6px rgba(217,168,76,0.18)' },
-          '50%': { boxShadow: '0 0 0 11px rgba(217,168,76,0.07)' },
+          '0%, 100%': { boxShadow: '0 0 0 6px rgba(166,225,122,0.22)' },
+          '50%': { boxShadow: '0 0 0 11px rgba(166,225,122,0.09)' },
         },
       },
       animation: {
