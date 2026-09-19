@@ -20,6 +20,12 @@ import type {
 import { waitForPortalUser, initPortalData } from '../../lib/portal/data';
 import type { PortalStore } from '../../lib/portal/data';
 import { getSupabase } from '../../lib/supabase';
+import { buildProfile, recommend, DEMO_RESUME_TEXT } from '../../lib/portal/recommend';
+import type { ResumeProfile } from '../../lib/portal/recommend';
+import { extractResumeText } from '../../lib/portal/resumeText';
+
+/** Lifecycle of the "For you" ranking. Everything but 'ready' renders a note. */
+type RecState = 'idle' | 'loading' | 'ready' | 'no-resume' | 'not-pdf' | 'unreadable';
 
 type KindFilter = 'all' | OpportunityKind;
 
@@ -198,6 +204,11 @@ export default function OpportunitiesApp({ school }: { school: string }) {
   const [resume, setResume] = useState<ResumeInfo | null | undefined>(undefined);
   const [aiFilter, setAiFilter] = useState<AiFilter | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [forYou, setForYou] = useState(false);
+  const [recState, setRecState] = useState<RecState>('idle');
+  const [profile, setProfile] = useState<ResumeProfile | null>(null);
+  /** True in demo sessions, where ranking runs on DEMO_RESUME_TEXT. */
+  const [usingSample, setUsingSample] = useState(false);
   const storeRef = useRef<PortalStore | null>(null);
   const noteTimer = useRef<number | undefined>(undefined);
 
@@ -246,6 +257,46 @@ export default function OpportunitiesApp({ school }: { school: string }) {
     });
   };
 
+  /**
+   * Build the resume profile on first use of "For you". Deferred to the click
+   * so pdf.js never loads for members who don't use it. Re-fetches the resume
+   * rather than reusing the page-load one, because its signed URL expires
+   * after ten minutes and this tab may have been open longer.
+   */
+  const loadProfile = async () => {
+    const store = storeRef.current;
+    if (!store) return;
+    setRecState('loading');
+    if (!store.live) {
+      setProfile(buildProfile(DEMO_RESUME_TEXT));
+      setUsingSample(true);
+      setRecState('ready');
+      return;
+    }
+    const fresh = await store.getResume().catch(() => null);
+    if (!fresh?.url) {
+      setRecState('no-resume');
+      return;
+    }
+    const result = await extractResumeText(fresh.url, fresh.name);
+    if (!result.ok) {
+      setRecState(result.reason);
+      return;
+    }
+    const built = buildProfile(result.text);
+    setProfile(built);
+    setRecState(built ? 'ready' : 'unreadable');
+  };
+
+  const toggleForYou = () => {
+    const next = !forYou;
+    setForYou(next);
+    // "For you" already excludes applied roles, so it cannot combine with the
+    // saved/applied views; switching it on clears them.
+    if (next) setActionFilter(null);
+    if (next && (recState === 'idle' || recState === 'no-resume')) loadProfile();
+  };
+
   const askAi = async () => {
     const q = query.trim();
     if (!q || aiLoading) return;
@@ -264,6 +315,15 @@ export default function OpportunitiesApp({ school }: { school: string }) {
     () => opportunities.filter((o) => actions[o.id]?.applied).length,
     [opportunities, actions]
   );
+
+  /** Rank + reasons per opportunity id, or null until a profile exists. */
+  const recs = useMemo(() => {
+    if (!profile) return null;
+    const ranked = recommend(profile, opportunities, actions);
+    return new Map(ranked.map((r, i) => [r.opportunity.id, { rank: i, reasons: r.reasons }]));
+  }, [profile, opportunities, actions]);
+
+  const ranking = forYou && recState === 'ready' && recs !== null;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -292,8 +352,16 @@ export default function OpportunitiesApp({ school }: { school: string }) {
           .toLowerCase();
         return haystack.includes(q);
       })
-      .sort((a, b) => b.postedAt.localeCompare(a.postedAt));
-  }, [opportunities, kind, query, aiFilter, actionFilter, actions]);
+      // Ranked view: recommend() omits applied roles, so absence from the map
+      // drops them here too. Other filters (kind, search, Ask AI) still apply,
+      // so "For you" + "Internships" works as expected.
+      .filter((o) => (ranking ? recs!.has(o.id) : true))
+      .sort((a, b) =>
+        ranking
+          ? recs!.get(a.id)!.rank - recs!.get(b.id)!.rank
+          : b.postedAt.localeCompare(a.postedAt)
+      );
+  }, [opportunities, kind, query, aiFilter, actionFilter, actions, ranking, recs]);
 
   /** Shared pill styling so the action pills match the kind pills exactly. */
   const pillClass = (active: boolean) =>
@@ -364,6 +432,29 @@ export default function OpportunitiesApp({ school }: { school: string }) {
       {/* Controls: kind pills, saved/applied pills, search, Ask AI. */}
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter opportunities">
+          <button
+            type="button"
+            onClick={toggleForYou}
+            aria-pressed={forYou}
+            title="Rank roles against your resume"
+            className={pillClass(forYou) + ' inline-flex items-center gap-1.5'}
+            style={pillStyle(forYou)}
+          >
+            <svg
+              className="h-3 w-3"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" />
+            </svg>
+            For you
+          </button>
+          <span className="mx-1 h-4 w-px self-center bg-line" aria-hidden="true" />
           {KIND_FILTERS.map((f) => {
             const active = kind === f.key;
             return (
@@ -387,7 +478,10 @@ export default function OpportunitiesApp({ school }: { school: string }) {
               <button
                 key={f.key}
                 type="button"
-                onClick={() => setActionFilter(active ? null : f.key)}
+                onClick={() => {
+                  setActionFilter(active ? null : f.key);
+                  if (!active) setForYou(false);
+                }}
                 aria-pressed={active}
                 className={pillClass(active)}
                 style={pillStyle(active)}
@@ -497,6 +591,49 @@ export default function OpportunitiesApp({ school }: { school: string }) {
         </div>
       )}
 
+      {/* "For you" status: what the ranking is based on, or why it is not running. */}
+      {forYou && (
+        <div className="mb-3 text-[0.8rem] text-ink-soft" role="status" aria-live="polite">
+          {recState === 'loading' && (
+            <span className="inline-flex items-center gap-2">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-ink/20 border-t-ink/60" />
+              Reading your resume…
+            </span>
+          )}
+          {recState === 'ready' && (
+            <span>
+              {usingSample
+                ? 'Demo session: ranked against a sample resume.'
+                : 'Ranked against your resume. It is read on this device and never uploaded anywhere.'}
+            </span>
+          )}
+          {recState === 'no-resume' && (
+            <span>
+              Add a resume on your{' '}
+              <a href={`/portal/${school}/`} className="font-semibold text-ink hover:underline">
+                Home tab
+              </a>{' '}
+              and roles will be ranked against it.
+            </span>
+          )}
+          {recState === 'not-pdf' && (
+            <span>
+              Recommendations read PDF resumes. Re-upload yours as a PDF on your{' '}
+              <a href={`/portal/${school}/`} className="font-semibold text-ink hover:underline">
+                Home tab
+              </a>
+              .
+            </span>
+          )}
+          {recState === 'unreadable' && (
+            <span>
+              We could not read enough text from your resume to rank roles. If it is a scanned
+              image, export it from your editor as a PDF with selectable text.
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Counts line. */}
       {!loading && (
         <p className="mb-3 text-[0.78rem] font-medium text-ink-soft">
@@ -561,6 +698,20 @@ export default function OpportunitiesApp({ school }: { school: string }) {
                         posted {relativeTime(o.postedAt)}
                       </span>
                     </div>
+                    {ranking && (recs!.get(o.id)?.reasons.length ?? 0) > 0 && (
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[0.72rem]">
+                        <span className="font-semibold text-ink-soft">Why:</span>
+                        {recs!.get(o.id)!.reasons.map((r) => (
+                          <span
+                            key={r}
+                            className="rounded-pill px-2 py-px font-semibold"
+                            style={{ background: 'var(--school-soft)', color: 'var(--school-deep)' }}
+                          >
+                            {r}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     {o.tags.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {o.tags.slice(0, 4).map((t) => (
