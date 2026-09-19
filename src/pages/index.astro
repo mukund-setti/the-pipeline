@@ -145,6 +145,17 @@ const drops = [
           <g transform="translate(17 4) rotate(46) scale(0.85)"><use href="#leaflet" fill="#4DAE2A"/></g>
           <g transform="translate(26 10) rotate(10)"><use href="#leaflet" fill="#8FD460"/></g>
         </g>
+        {/* Five-petal white blossom for the tree finale. Centered on origin. */}
+        <g id="blossom">
+          <g fill="#FFFFFF" stroke="#DCEBCB" stroke-width="0.8">
+            <ellipse cx="0" cy="-5.2" rx="3" ry="5.2"/>
+            <ellipse cx="0" cy="-5.2" rx="3" ry="5.2" transform="rotate(72)"/>
+            <ellipse cx="0" cy="-5.2" rx="3" ry="5.2" transform="rotate(144)"/>
+            <ellipse cx="0" cy="-5.2" rx="3" ry="5.2" transform="rotate(216)"/>
+            <ellipse cx="0" cy="-5.2" rx="3" ry="5.2" transform="rotate(288)"/>
+          </g>
+          <circle r="2.4" fill="#CDF0A9"/>
+        </g>
       </defs>
     </svg>
 
@@ -261,41 +272,78 @@ const drops = [
       </section>
     </div>
 
-    {/* Seed-to-plant scroll story: fixed bottom right, grows with progress.
-        Painted behind content, hidden on narrow screens. */}
+    {/* Seed-to-tree scroll story: a centered background tree behind the
+        content. Roots erupt from the seed, the trunk rises, the canopy
+        fills in, then white blossoms open at the end of the page. */}
     {SHOW_PLANT && (
     <div class="plant" id="plant" aria-hidden="true">
-      <svg viewBox="0 0 240 340">
-        <g class="seed-shrink" data-at="0.12">
-          <ellipse cx="150" cy="318" rx="15" ry="19" fill="#1C4A12"/>
-          <path d="M143 314 L152 306 L147 298" fill="none" stroke="#A6E17A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <svg viewBox="0 0 600 640">
+        <g class="seed-shrink" data-at="0.14">
+          <ellipse cx="300" cy="566" rx="17" ry="21" fill="#1C4A12"/>
+          <path d="M292 562 L302 553 L296 544" fill="none" stroke="#A6E17A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
         </g>
-        <path class="trace-draw stem" pathLength="1" data-start="0.06" data-end="0.5"
-          d="M150 330 C146 300 154 262 148 220 C144 190 152 158 147 118"/>
-        <g class="pop-grow" data-at="0.28" style="transform-origin:149px 262px">
-          <path d="M149 262 C129 258 116 246 112 228 C132 232 145 244 149 262 Z" fill="#4DAE2A"/>
+        {/* Roots erupt first */}
+        <path class="trace-draw twig" pathLength="1" data-start="0.04" data-end="0.14"
+          d="M300 568 C260 572 222 568 182 580 C152 589 132 602 120 618"/>
+        <path class="trace-draw twig" pathLength="1" data-start="0.05" data-end="0.15"
+          d="M300 568 C340 574 380 572 416 584 C446 594 464 606 474 622"/>
+        <path class="trace-draw twig" pathLength="1" data-start="0.07" data-end="0.16"
+          d="M296 572 C270 586 250 602 240 624"/>
+        <path class="trace-draw twig" pathLength="1" data-start="0.08" data-end="0.17"
+          d="M304 572 C330 588 348 606 354 628"/>
+        {/* Trunk and boughs */}
+        <path class="trace-draw stem" pathLength="1" data-start="0.12" data-end="0.34"
+          d="M300 570 C292 520 308 465 298 405 C290 350 304 300 296 245"/>
+        <path class="trace-draw twig" pathLength="1" data-start="0.30" data-end="0.42" d="M298 405 C250 380 205 368 160 370"/>
+        <path class="trace-draw twig" pathLength="1" data-start="0.36" data-end="0.48" d="M299 360 C350 335 395 325 440 330"/>
+        <path class="trace-draw twig" pathLength="1" data-start="0.42" data-end="0.52" d="M297 305 C258 282 222 270 190 268"/>
+        <path class="trace-draw twig" pathLength="1" data-start="0.48" data-end="0.58" d="M297 280 C332 258 366 246 398 246"/>
+        <path class="trace-draw twig" pathLength="1" data-start="0.52" data-end="0.60" d="M296 245 C292 215 300 190 296 165"/>
+        {/* Bough tufts */}
+        <circle class="pop-grow" data-at="0.44" style="transform-origin:160px 370px" cx="160" cy="370" r="42" fill="#4DAE2A"/>
+        <circle class="pop-grow" data-at="0.46" style="transform-origin:128px 340px" cx="128" cy="340" r="32" fill="#8FD460"/>
+        <circle class="pop-grow" data-at="0.50" style="transform-origin:440px 330px" cx="440" cy="330" r="44" fill="#4DAE2A"/>
+        <circle class="pop-grow" data-at="0.52" style="transform-origin:470px 300px" cx="470" cy="300" r="30" fill="#66C63C"/>
+        <circle class="pop-grow" data-at="0.56" style="transform-origin:190px 268px" cx="190" cy="268" r="36" fill="#66C63C"/>
+        <circle class="pop-grow" data-at="0.62" style="transform-origin:398px 246px" cx="398" cy="246" r="40" fill="#4DAE2A"/>
+        {/* Crown */}
+        <circle class="pop-grow" data-at="0.66" style="transform-origin:296px 150px" cx="296" cy="150" r="70" fill="#4DAE2A"/>
+        <circle class="pop-grow" data-at="0.68" style="transform-origin:215px 185px" cx="215" cy="185" r="56" fill="#66C63C"/>
+        <circle class="pop-grow" data-at="0.70" style="transform-origin:378px 180px" cx="378" cy="180" r="58" fill="#4DAE2A"/>
+        <circle class="pop-grow" data-at="0.72" style="transform-origin:296px 215px" cx="296" cy="215" r="64" fill="#8FD460"/>
+        <circle class="pop-grow" data-at="0.74" style="transform-origin:160px 230px" cx="160" cy="230" r="44" fill="#8FD460"/>
+        <circle class="pop-grow" data-at="0.76" style="transform-origin:430px 225px" cx="430" cy="225" r="46" fill="#8FD460"/>
+        <circle class="pop-grow" data-at="0.78" style="transform-origin:245px 110px" cx="245" cy="110" r="44" fill="#66C63C"/>
+        <circle class="pop-grow" data-at="0.78" style="transform-origin:350px 115px" cx="350" cy="115" r="40" fill="#8FD460"/>
+        {/* Blossoms */}
+        <g class="pop-grow" data-at="0.82" style="transform-origin:240px 150px">
+          <g transform="translate(240 150) rotate(12) scale(2)"><use href="#blossom"/></g>
         </g>
-        <g class="pop-grow" data-at="0.40" style="transform-origin:148px 226px">
-          <path d="M148 226 C168 222 181 210 185 192 C165 196 152 208 148 226 Z" fill="#8FD460"/>
+        <g class="pop-grow" data-at="0.84" style="transform-origin:350px 140px">
+          <g transform="translate(350 140) rotate(40) scale(1.7)"><use href="#blossom"/></g>
         </g>
-        <path class="trace-draw twig" pathLength="1" data-start="0.50" data-end="0.62" d="M148 200 C132 192 118 188 100 188"/>
-        <path class="trace-draw twig" pathLength="1" data-start="0.60" data-end="0.72" d="M147 165 C163 156 178 152 198 154"/>
-        <path class="root-dot" data-at="0.63" d="M96 188 l0.01 0"/>
-        <path class="root-dot" data-at="0.73" d="M202 154 l0.01 0"/>
-        <g class="pop-grow" data-at="0.78" style="transform-origin:147px 118px">
-          <path d="M147 118 C142 104 132 94 118 90 C122 106 133 115 147 118 Z" fill="#4DAE2A"/>
-          <path d="M147 118 C152 103 162 93 177 90 C173 106 161 116 147 118 Z" fill="#8FD460"/>
+        <g class="pop-grow" data-at="0.86" style="transform-origin:200px 220px">
+          <g transform="translate(200 220) rotate(65) scale(1.9)"><use href="#blossom"/></g>
+        </g>
+        <g class="pop-grow" data-at="0.88" style="transform-origin:395px 205px">
+          <g transform="translate(395 205) rotate(25) scale(2.1)"><use href="#blossom"/></g>
+        </g>
+        <g class="pop-grow" data-at="0.90" style="transform-origin:298px 190px">
+          <g transform="translate(298 190) rotate(50) scale(1.7)"><use href="#blossom"/></g>
+        </g>
+        <g class="pop-grow" data-at="0.92" style="transform-origin:160px 350px">
+          <g transform="translate(160 350) rotate(18) scale(1.8)"><use href="#blossom"/></g>
+        </g>
+        <g class="pop-grow" data-at="0.94" style="transform-origin:445px 315px">
+          <g transform="translate(445 315) rotate(72) scale(1.7)"><use href="#blossom"/></g>
+        </g>
+        <g class="pop-grow" data-at="0.96" style="transform-origin:195px 255px">
+          <g transform="translate(195 255) rotate(35) scale(1.9)"><use href="#blossom"/></g>
+        </g>
+        <g class="pop-grow" data-at="0.98" style="transform-origin:296px 90px">
+          <g transform="translate(296 90) rotate(8) scale(2.2)"><use href="#blossom"/></g>
         </g>
       </svg>
-      <span class="chip pop-grow" data-at="0.85" style="left:30%;top:54%">
-        <img src="/img/logos/capital-one.webp" alt="" loading="lazy" decoding="async" />Capital One
-      </span>
-      <span class="chip pop-grow" data-at="0.92" style="left:80%;top:37%">
-        <img src="/img/logos/amazon.webp" alt="" loading="lazy" decoding="async" />Amazon
-      </span>
-      <span class="chip pop-grow" data-at="0.98" style="left:52%;top:16%">
-        <img src="/img/logos/mlt.webp" alt="" loading="lazy" decoding="async" />MLT
-      </span>
     </div>
     )}
   </div>
@@ -704,25 +752,23 @@ const drops = [
   /* ---------- seed-to-plant scroll story ---------- */
   .plant {
     position: fixed;
-    /* Centered between the CTA panel's right edge (about 50vw + 416px with
-       the rail's padding) and the right vine, but never behind the panel:
-       whichever of the two is further right wins. */
-    left: max(calc(50vw + 424px), calc(75vw + 55px));
-    bottom: 6px;
-    width: 190px;
-    aspect-ratio: 240 / 340;
+    /* Centered background art: content scrolls over it, vines frame it. */
+    left: 50%;
+    bottom: 0;
+    width: min(680px, 76vw);
+    aspect-ratio: 600 / 640;
     z-index: 0;
     pointer-events: none;
     opacity: 0;
-    transform: translateY(24px);
+    transform: translate(-50%, 24px);
     transition: opacity 0.4s ease, transform 0.4s ease;
   }
-  .plant.visible { opacity: 1; transform: translateY(0); }
+  .plant.visible { opacity: 0.55; transform: translate(-50%, 0); }
   .plant svg { width: 100%; height: 100%; overflow: visible; }
-  .trace-draw.stem { stroke: var(--sprout); stroke-width: 9; }
-  .trace-draw.twig { stroke: var(--sprout-deep); stroke-width: 6; }
+  .trace-draw.stem { stroke: var(--fern); stroke-width: 18; }
+  .trace-draw.twig { stroke: var(--fern); stroke-width: 10; }
   .seed-shrink {
-    transform-origin: 150px 318px;
+    transform-origin: 300px 566px;
     transition: opacity 0.4s ease, transform 0.4s ease;
   }
   .seed-shrink.on { opacity: 0; transform: scale(0.4); }
@@ -731,25 +777,7 @@ const drops = [
     transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
   .pop-grow.on { transform: scale(1); }
-  .chip {
-    position: absolute;
-    translate: -50% -100%;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: #fff;
-    border: 2px solid var(--lime);
-    border-radius: var(--radius-pill);
-    padding: 5px 10px;
-    color: var(--fern);
-    font-weight: 700;
-    font-size: 11.5px;
-    white-space: nowrap;
-    box-shadow: 0 8px 20px rgba(28, 74, 18, 0.14);
-  }
-  .chip img { height: 12px; width: auto; border-radius: 3px; }
-
-  @media (max-width: 1399px) {
+  @media (max-width: 899px) {
     .plant { display: none; }
   }
   @media (max-width: 900px) {
