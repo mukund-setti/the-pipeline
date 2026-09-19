@@ -48,11 +48,29 @@ export default {
           soft: '#A8B29A', // muted sage text on canopy
           link: '#D9A84C', // links on canopy (gold)
         },
+        // ── "The Board" (homepage + shared chrome only) ──────
+        // Additive, parallel token set — every other page keeps the
+        // canopy/gold tokens above untouched.
+        board: {
+          bg: '#0E1611',
+          surface: '#121C16',
+          line: '#24362B',
+          lineSubtle: '#1C2A22',
+          lineButton: '#2E4437',
+          green: '#3FA46A',
+          greenInk: '#07130C',
+          text: '#E8EFE9',
+          textMuted: '#A7BAAE',
+          textDim: '#6E8377',
+        },
       },
       fontFamily: {
         display: ['Fraunces', 'Georgia', 'ui-serif', 'serif'],
         sans: ['"Instrument Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         mono: ['"Instrument Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        boardDisplay: ['Archivo', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        boardMono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
+        boardSans: ['"IBM Plex Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       // Type scale: fluid via clamp(), tuned for a serif display face.
       fontSize: {

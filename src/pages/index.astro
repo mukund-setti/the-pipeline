@@ -1,15 +1,9 @@
 ---
 import Layout from '../components/Layout.astro';
-import Eyebrow from '../components/ui/Eyebrow.astro';
-import Conduit from '../components/ui/Conduit.astro';
-import Button from '../components/ui/Button.astro';
-import SectionHead from '../components/ui/SectionHead.astro';
-import StatGrid from '../components/ui/StatGrid.astro';
-import StageCard from '../components/ui/StageCard.astro';
-import CtaBand from '../components/ui/CtaBand.astro';
-import DropFeed from '../components/ui/DropFeed.tsx';
-import ScrollReveal from '../components/ui/ScrollReveal.tsx';
-import { site, hero, placements, stages } from '../data/site';
+import { site, hero, stats, drops, dropsTotalCount, events, sponsorSlotCount, links } from '../data/site';
+
+// Homepage stat strip: 4 real cells, not the reference's placeholder numbers.
+const heroStats = stats.slice(0, 4);
 ---
 <Layout
   title="The Pipeline · A fellow-run community across the UC system"
@@ -17,159 +11,134 @@ import { site, hero, placements, stages } from '../data/site';
   ogTitle="The Pipeline · Across the UC system"
   ogDescription={site.ogDescription}
 >
-  {/* ── Hero: under the canopy ───────────────────────────── */}
-  <section class="on-ink relative overflow-hidden bg-canopy pb-24 pt-[88px] text-ondark max-[560px]:pb-16 max-[560px]:pt-14">
-    <div aria-hidden="true" class="pointer-events-none absolute inset-0">
-      <img
-        src="/img/hero-students.webp"
-        alt=""
-        width="1800"
-        height="1208"
-        decoding="async"
-        fetchpriority="low"
-        class="absolute inset-y-0 right-0 h-full w-full object-cover object-center opacity-15 md:w-[62%] md:opacity-40"
-      />
-      <div class="photo-wash-right absolute inset-0 hidden md:block"></div>
-      <div class="absolute inset-0 bg-canopy/80 md:hidden"></div>
-      <div class="light-shaft"></div>
-    </div>
+  {/* ── Hero ─────────────────────────────────────────────── */}
+  <section class="on-ink bg-board-bg pb-16 pt-12 text-board-text md:pb-20 md:pt-16">
+    <div class="wrap grid gap-10 lg:grid-cols-[1.15fr_1fr] lg:gap-14">
+      <div>
+        <div class="mb-6 inline-flex items-center gap-2 font-boardMono text-[11px] uppercase tracking-[0.14em] text-board-green">
+          <span class="h-1.5 w-1.5 flex-none rounded-full bg-board-green" aria-hidden="true"></span>
+          {hero.eyebrow}
+        </div>
+        <h1 class="mb-[22px] max-w-[17ch] font-boardDisplay text-[clamp(2.2rem,5.5vw,3.9rem)] font-extrabold leading-[1.04] tracking-[-0.02em] text-board-text">
+          Internships are won<br class="hidden sm:block" />
+          before the application<br class="hidden sm:block" />
+          opens.
+        </h1>
+        <p class="mb-8 max-w-[54ch] font-boardSans text-[17px] leading-relaxed text-board-textMuted">
+          Pipeline is UCI's CS recruitment club. We run the referral network, the resume desk,
+          and the mock interview loop that get members into tech — and we keep the board of
+          who's hiring, updated daily.
+        </p>
+        <div class="mb-10 flex flex-wrap items-center gap-3">
+          <a
+            href="/join/"
+            class="inline-flex items-center gap-2 bg-board-green px-7 py-[15px] font-boardSans text-[15px] font-semibold text-board-greenInk transition-colors hover:bg-board-text"
+          >
+            Join Pipeline
+          </a>
+          <a
+            href="#this-week"
+            class="inline-flex items-center border border-board-lineButton px-7 py-[15px] font-boardSans text-[15px] font-medium text-board-text transition-colors hover:border-board-text"
+          >
+            See this week's events
+          </a>
+        </div>
+        <div class="grid grid-cols-2 gap-px border border-board-line bg-board-line sm:grid-cols-4">
+          {
+            heroStats.map((s) => (
+              <div class="bg-board-bg px-3.5 py-4">
+                <div class="font-boardDisplay text-[28px] font-bold text-board-text">{s.num}</div>
+                <div class="mt-1 font-boardMono text-[10px] uppercase tracking-[0.1em] text-board-textDim">
+                  {s.cap}
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </div>
 
-    <div class="wrap relative">
-      <Eyebrow tone="onDark" class="animate-riseIn flex" as="div">{hero.eyebrow}</Eyebrow>
-      <h1
-        class="animate-riseIn mb-[26px] mt-[26px] max-w-[17ch] font-display text-hero font-semibold tracking-tight text-ondark"
-        style="animation-delay:80ms"
-      >
-        We don't fix the pipeline. We <span class="hl-gold">are</span> the pipeline.
-      </h1>
-      <p
-        class="animate-riseIn mb-[34px] max-w-[54ch] text-lede text-ondark-soft [&_b]:font-semibold [&_b]:text-ondark"
-        style="animation-delay:160ms"
-      >
-        A fellow-run community across the UC system moving underrepresented <b>undergrads in tech</b>
-        into the rooms they were kept out of, through <b>gatekept job drops</b>, <b>resume reviews</b>,
-        and <b>mock interviews</b> run by people who have already landed.
-      </p>
-      <div class="animate-riseIn flex flex-wrap items-center gap-3" style="animation-delay:240ms">
-        <Button href="/join/" arrow>Join the Pipeline</Button>
-        <Button href="/how/" variant="ghostDark">See how it works</Button>
-      </div>
-      <div
-        class="label animate-riseIn mt-8 inline-flex items-center gap-2.5 rounded-pill border border-line-dark bg-canopy-2/70 px-4 py-2.5 text-[0.68rem] text-ondark-soft"
-        style="animation-delay:300ms"
-      >
-        <span class="h-2 w-2 flex-none rounded-full bg-gold" aria-hidden="true"></span>
-        {hero.proof}
-      </div>
-      <div class="animate-riseIn mt-16" style="animation-delay:360ms">
-        <Conduit tone="dark" notes />
+      {/* Open drops panel: sample data, honestly labeled — see src/data/site.ts. */}
+      <div class="border border-board-line bg-board-surface">
+        <div class="flex items-center justify-between border-b border-board-line px-[18px] py-[14px] font-boardMono text-[11px] uppercase tracking-[0.12em]">
+          <span class="text-board-text">Open drops</span>
+          <span class="text-board-textDim">Sample data</span>
+        </div>
+        <div>
+          {
+            drops.map((d) => (
+              <div class="grid grid-cols-[1fr_auto] gap-3 border-b border-board-lineSubtle px-[18px] py-4">
+                <div>
+                  <div class="font-boardSans text-[15px] font-semibold text-board-text">{d.role}</div>
+                  <div class="mt-1 font-boardMono text-[11px] text-board-textDim">
+                    {d.company} · {d.qualifier}
+                  </div>
+                </div>
+                <div class="whitespace-nowrap font-boardMono text-[11px] text-board-green">{d.closesAt}</div>
+              </div>
+            ))
+          }
+          <a
+            href="/join/"
+            class="block px-[18px] py-[15px] font-boardMono text-[11px] uppercase tracking-[0.12em] text-board-green transition-colors hover:text-board-text"
+          >
+            Members see all {dropsTotalCount} &rarr;
+          </a>
+        </div>
       </div>
     </div>
   </section>
 
-  {/* ── Drop feed ────────────────────────────────────────── */}
-  <section class="on-ink relative overflow-hidden border-y border-line-dark bg-canopy-2 py-12 text-ondark">
-    <div aria-hidden="true" class="light-shaft-soft"></div>
-    <div class="wrap relative">
-      <div class="mb-6 flex items-end justify-between gap-4">
-        <Eyebrow tone="onDark">Where our fellows have landed</Eyebrow>
-        <a
-          href="/outcomes/"
-          class="label hidden text-[0.7rem] text-gold transition-colors hover:text-gold-pale md:inline"
-        >
-          See all outcomes &rarr;
-        </a>
-      </div>
-    </div>
-    <DropFeed placements={placements} client:visible />
-    <div class="wrap relative">
-      <div class="mt-6 md:hidden">
-        <a href="/outcomes/" class="label text-[0.7rem] text-gold">See all outcomes &rarr;</a>
-      </div>
-    </div>
-  </section>
-
-  {/* ── Stats ────────────────────────────────────────────── */}
-  <section class="py-20 md:py-24">
+  {/* ── This week ────────────────────────────────────────── */}
+  <section id="this-week" class="on-ink border-t border-board-line bg-board-bg py-16 text-board-text md:py-20">
     <div class="wrap">
-      <ScrollReveal client:visible>
-        <StatGrid />
-      </ScrollReveal>
-    </div>
-  </section>
-
-  {/* ── How it works (teaser) ────────────────────────────── */}
-  <section class="pb-20 md:pb-28">
-    <div class="wrap">
-      <SectionHead eyebrow="How it works" title="Three stages, one direction: forward." class="mb-12" />
-      <ScrollReveal
-        stagger
-        client:visible
-        className="grid grid-cols-3 gap-5 max-[860px]:grid-cols-2 max-[560px]:grid-cols-1"
-      >
+      <div class="mb-2 border-b border-board-line pb-[18px]">
+        <h2 class="font-boardDisplay text-[26px] font-bold tracking-[-0.01em] text-board-text">This week</h2>
+      </div>
+      <div>
         {
-          stages.map((s) => (
-            <StageCard num={s.num} label={s.label} title={s.title} body={s.short} />
+          events.map((e) => (
+            <div class="flex flex-col gap-2 border-b border-board-lineSubtle py-5 sm:grid sm:grid-cols-[96px_1fr_200px_130px] sm:items-center sm:gap-5">
+              <div class="font-boardMono text-[12px] text-board-green">{e.date}</div>
+              <div>
+                <div class="font-boardSans text-[17px] font-semibold text-board-text">{e.title}</div>
+                <div class="mt-1 font-boardSans text-[13px] text-board-textDim">{e.description}</div>
+              </div>
+              <div class="font-boardMono text-[12px] text-board-textMuted">
+                {e.time} · {e.location}
+              </div>
+              <a
+                href={links.form}
+                target="_blank"
+                rel="noopener"
+                class:list={[
+                  'inline-flex items-center justify-center px-5 py-[9px] font-boardSans text-[13px] transition-colors sm:justify-self-end',
+                  e.featured
+                    ? 'bg-board-green font-semibold text-board-greenInk hover:bg-board-text'
+                    : 'border border-board-lineButton font-medium text-board-text hover:border-board-text',
+                ]}
+              >
+                RSVP
+              </a>
+            </div>
           ))
         }
-      </ScrollReveal>
-      <div class="mt-10">
-        <Button href="/how/" variant="ghost" arrow>See what every fellow gets</Button>
       </div>
     </div>
   </section>
 
-  {/* ── Mission (teaser) ─────────────────────────────────── */}
-  <section class="on-ink relative overflow-hidden bg-canopy py-24 text-ondark">
-    <img
-      src="/img/mission-students.webp"
-      alt=""
-      aria-hidden="true"
-      loading="lazy"
-      decoding="async"
-      width="1600"
-      height="1104"
-      class="absolute inset-0 h-full w-full object-cover opacity-15"
-    />
-    <div aria-hidden="true" class="photo-wash-ink absolute inset-0"></div>
-    <div aria-hidden="true" class="light-shaft"></div>
-    <div class="wrap relative">
-      <ScrollReveal client:visible>
-        <div class="mx-auto max-w-3xl text-center">
-          <Eyebrow tone="onDark" class="justify-center">Why we exist</Eyebrow>
-          <h2
-            class="mx-auto mt-5 max-w-[20ch] font-display text-[clamp(2rem,5vw,3.4rem)] font-semibold leading-[1.08] tracking-tight text-ondark"
-          >
-            The talent was <span class="hl-gold">never</span> the problem.
-          </h2>
-          <p
-            class="mx-auto mt-6 max-w-[58ch] text-[clamp(1.05rem,1.7vw,1.3rem)] leading-relaxed text-ondark-soft [&_b]:font-semibold [&_b]:text-ondark"
-          >
-            People call it the "pipeline problem", as if the talent is not out there. It is. What is
-            gatekept is <b>access</b>. The Pipeline hands that access to the people who have been
-            locked out of it, and lets the work speak for itself.
-          </p>
-          <div class="mt-8 flex justify-center">
-            <Button href="/about/" variant="ghostDark" arrow>Read the whole story</Button>
-          </div>
-        </div>
-      </ScrollReveal>
-    </div>
-  </section>
-
-  {/* ── Join CTA ─────────────────────────────────────────── */}
-  <section class="py-20">
+  {/* ── Sponsors ─────────────────────────────────────────── */}
+  <section class="on-ink border-t border-board-line bg-board-bg py-10 text-board-text">
     <div class="wrap">
-      <CtaBand eyebrow="Join" title="Get in the pipeline.">
-        <Fragment slot="body">
-          Undergrad, underrepresented in tech, and tired of doing this alone?
-          <b>You're who we built this for.</b> It's free, it's run by fellows, and it works.
-        </Fragment>
-        <Fragment slot="actions">
-          <Button href="/join/" arrow>How to join</Button>
-          <Button href="/join/" variant="ghostDark">Join the Discord</Button>
-        </Fragment>
-      </CtaBand>
+      <div class="mb-[18px] font-boardMono text-[11px] uppercase tracking-[0.12em] text-board-textDim">
+        Backed by
+      </div>
+      <div class="flex flex-wrap gap-3.5">
+        {
+          Array.from({ length: sponsorSlotCount }).map(() => (
+            <div class="board-sponsor-slot h-[52px] min-w-[120px] flex-1 font-boardMono text-[10px] uppercase tracking-[0.1em] text-board-textMuted" />
+          ))
+        }
+      </div>
     </div>
   </section>
 </Layout>

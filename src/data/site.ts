@@ -31,10 +31,9 @@ export const nav = [
 
 export const navCta = { label: 'Join', href: '/join/' } as const;
 
-/** Home hero strings. Undergrad identity up top, a success proof point below. */
+/** Home hero strings. */
 export const hero = {
-  eyebrow: 'UC system · Undergrad fellowship · Est. 2026',
-  proof: '65% of fellows land an internship',
+  eyebrow: 'Fall 2026 recruiting is open',
 } as const;
 
 /**
@@ -71,6 +70,75 @@ export const placements: Placement[] = [
   { org: 'American Express', role: 'Internship', mark: 'AX', logo: '/img/logos/american-express.webp' },
   { org: 'Amazon', role: 'Full-Time Offer', mark: 'a', logo: '/img/logos/amazon.webp' },
 ];
+
+export type Drop = {
+  role: string;
+  company: string;
+  qualifier: string;
+  closesAt: string;
+  referralAvailable?: boolean;
+};
+
+/**
+ * Homepage "Open drops" panel. SAMPLE DATA — not wired to a live feed yet
+ * (the real job-drop data lives in Supabase `opportunities`, gated to signed-in
+ * portal members). TODO: VERIFY or replace with real postings before publishing.
+ */
+export const drops: Drop[] = [
+  { role: 'SWE Intern, Summer 2027', company: 'Stripe', qualifier: 'referral available', closesAt: 'Closes 10/02', referralAvailable: true },
+  { role: 'New Grad, Infrastructure', company: 'Databricks', qualifier: 'alum contact', closesAt: 'Closes 10/06' },
+  { role: 'Product Eng Intern', company: 'Figma', qualifier: 'portfolio required', closesAt: 'Closes 10/11' },
+  { role: 'Security Research Intern', company: 'Crowdstrike', qualifier: 'open to sophomores', closesAt: 'Closes 10/14' },
+];
+
+/** Total drop count shown in the "Members see all N →" link. TODO: VERIFY. */
+export const dropsTotalCount = 37;
+
+export type PipelineEvent = {
+  date: string;
+  title: string;
+  description: string;
+  time: string;
+  location: string;
+  featured?: boolean;
+};
+
+/**
+ * Homepage "This week" events. SAMPLE DATA with placeholder dates/locations.
+ * TODO: VERIFY real dates, times, and rooms with the founder before publishing.
+ * RSVP buttons link to the general interest form (`links.form`) since there is
+ * no live RSVP backend yet.
+ */
+export const events: PipelineEvent[] = [
+  {
+    date: 'MON 9/21',
+    title: 'Resume desk, walk-in',
+    description: 'Bring a draft, leave with edits from members who interned there.',
+    time: '6:00 PM',
+    location: 'DBH 1300',
+  },
+  {
+    date: 'WED 9/23',
+    title: 'Mock interview night: arrays & graphs',
+    description: 'Paired 45-minute loops, scored on the same rubric big tech uses.',
+    time: '7:00 PM',
+    location: 'ICS 180',
+  },
+  {
+    date: 'FRI 9/25',
+    title: 'Alum panel: Snap, Nvidia, Ramp',
+    description: 'Three Anteaters on how their first offer actually happened.',
+    time: '5:30 PM',
+    location: 'Bren Hall',
+    featured: true,
+  },
+];
+
+/**
+ * Homepage "Backed by" strip. Placeholder slots only — no sponsor names are
+ * confirmed yet. TODO: replace with real sponsor logos once secured.
+ */
+export const sponsorSlotCount = 5;
 
 export type Stat = { num: string; cap: string; win?: boolean };
 

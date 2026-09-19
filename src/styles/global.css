@@ -180,6 +180,14 @@
       theme(colors.canopy.DEFAULT) 100%
     );
   }
+  /* Homepage sponsor placeholder slot — striped, until real logos land. */
+  .board-sponsor-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: repeating-linear-gradient(135deg, theme(colors.board.surface) 0 6px, theme(colors.board.bg) 6px 12px);
+  }
+
   .photo-wash-paper {
     background: linear-gradient(
       to right,

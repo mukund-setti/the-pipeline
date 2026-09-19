@@ -4,32 +4,31 @@ import { nav, navCta, footer, voice } from '../data/site';
 
 const footNav = [{ label: 'Home', href: '/' }, ...nav, navCta];
 ---
-<footer class="on-ink relative overflow-hidden border-t border-line-dark bg-canopy py-16 text-ondark">
-  <div aria-hidden="true" class="light-shaft-soft"></div>
-  <div class="wrap relative">
-    {/* The banner tagline, signed off in gold. */}
-    <p class="mb-14 max-w-[22ch] font-display text-[clamp(1.7rem,3.6vw,2.6rem)] font-semibold leading-[1.15] tracking-tight text-ondark">
+<footer class="on-ink border-t border-board-line bg-board-bg py-16 text-board-text">
+  <div class="wrap">
+    {/* The banner tagline, signed off in board green. */}
+    <p class="mb-14 max-w-[22ch] font-boardDisplay text-[clamp(1.7rem,3.6vw,2.6rem)] font-bold leading-[1.15] tracking-tight text-board-text">
       {voice.tagline}
-      <span class="hl-gold">Together.</span>
+      <span class="text-board-green">Together.</span>
     </p>
 
     <div class="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
       <div>
         <a
           href="/"
-          class="inline-flex items-center gap-3 font-display text-[1.15rem] font-semibold text-ondark"
+          class="inline-flex items-center gap-3 font-boardMono text-[15px] font-semibold tracking-[0.06em] text-board-text"
         >
           <Mark size={34} />
-          The Pipeline
+          THE PIPELINE
         </a>
-        <p class="mt-5 max-w-sm text-[14px] leading-relaxed text-ondark-soft">
+        <p class="mt-5 max-w-sm font-boardSans text-[14px] leading-relaxed text-board-textMuted">
           A fellow-run community across the UC system handing over the access that was always there.
         </p>
       </div>
-      <nav class="grid grid-cols-2 gap-x-12 gap-y-3 text-[14px]" aria-label="Footer">
+      <nav class="grid grid-cols-2 gap-x-12 gap-y-3 font-boardSans text-[14px]" aria-label="Footer">
         {
           footNav.map((item) => (
-            <a href={item.href} class="text-ondark-soft transition-colors hover:text-gold">
+            <a href={item.href} class="text-board-textMuted transition-colors hover:text-board-green">
               {item.label}
             </a>
           ))
@@ -37,7 +36,7 @@ const footNav = [{ label: 'Home', href: '/' }, ...nav, navCta];
       </nav>
     </div>
     <div
-      class="label mt-12 flex flex-col gap-2 border-t border-line-dark pt-6 text-[0.7rem] text-ondark-soft md:flex-row md:items-center md:justify-between"
+      class="mt-12 flex flex-col gap-2 border-t border-board-lineSubtle pt-6 font-boardMono text-[11px] uppercase tracking-[0.1em] text-board-textDim md:flex-row md:items-center md:justify-between"
     >
       <span>{footer.builtBy}</span>
       <span>{footer.copyright}</span>
