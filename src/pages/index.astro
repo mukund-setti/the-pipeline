@@ -1,175 +1,778 @@
 ---
 import Layout from '../components/Layout.astro';
-import Eyebrow from '../components/ui/Eyebrow.astro';
-import Conduit from '../components/ui/Conduit.astro';
-import Button from '../components/ui/Button.astro';
-import SectionHead from '../components/ui/SectionHead.astro';
-import StatGrid from '../components/ui/StatGrid.astro';
-import StageCard from '../components/ui/StageCard.astro';
-import CtaBand from '../components/ui/CtaBand.astro';
-import DropFeed from '../components/ui/DropFeed.tsx';
-import ScrollReveal from '../components/ui/ScrollReveal.tsx';
-import { site, hero, placements, stages } from '../data/site';
+import { site, nav, navCta, stages, stats, footer, placements } from '../data/site';
+
+// Fonts come from Layout (Baloo 2 + Quicksand, self-hosted).
+
+/** The fixed seed-to-plant scroll story (and the seed watermark that sets it
+ *  up). Positioned in the gap between the content rail and the right vine. */
+const SHOW_PLANT = true;
+
+/* ── Edge vines, generated ──────────────────────────────────────────
+   The trunks are cubic Bezier chains; sprig positions are EVALUATED on
+   those curves (point + tangent) so every frond sits exactly on the
+   vine and droops with its direction of growth. */
+type V2 = [number, number];
+type Seg = { c1: V2; c2: V2; to: V2 };
+/** [segment index, t along it, droop side (+1/-1), scale] */
+type Node = [number, number, 1 | -1, number];
+
+const cubic = (p0: V2, s: Seg, t: number) => {
+  const mt = 1 - t;
+  const [x0, y0] = p0;
+  const [x1, y1] = s.c1;
+  const [x2, y2] = s.c2;
+  const [x3, y3] = s.to;
+  const x = mt ** 3 * x0 + 3 * mt * mt * t * x1 + 3 * mt * t * t * x2 + t ** 3 * x3;
+  const y = mt ** 3 * y0 + 3 * mt * mt * t * y1 + 3 * mt * t * t * y2 + t ** 3 * y3;
+  const dx = 3 * mt * mt * (x1 - x0) + 6 * mt * t * (x2 - x1) + 3 * t * t * (x3 - x2);
+  const dy = 3 * mt * mt * (y1 - y0) + 6 * mt * t * (y2 - y1) + 3 * t * t * (y3 - y2);
+  return { x, y, ang: (Math.atan2(dy, dx) * 180) / Math.PI };
+};
+
+const makeVine = (start: V2, segs: Seg[], nodes: Node[]) => {
+  const d =
+    `M${start[0]} ${start[1]} ` +
+    segs.map((s) => `C${s.c1[0]} ${s.c1[1]} ${s.c2[0]} ${s.c2[1]} ${s.to[0]} ${s.to[1]}`).join(' ');
+  const sprigs = nodes.map(([i, t, side, scale], idx) => {
+    const p0 = i === 0 ? start : segs[i - 1].to;
+    const p = cubic(p0, segs[i], t);
+    // Droop ~50deg off the growth direction, with deterministic jitter.
+    const rot = Math.round(p.ang + side * (50 + ((idx * 37) % 15) - 7));
+    return {
+      x: +p.x.toFixed(1),
+      y: +p.y.toFixed(1),
+      rot,
+      scale,
+      at: Math.min(0.97, +(p.y / 1000 + 0.045).toFixed(3)),
+    };
+  });
+  return { d, sprigs };
+};
+
+const leftVine = makeVine(
+  [34, 0],
+  [
+    { c1: [60, 70], c2: [16, 150], to: [40, 230] },
+    { c1: [62, 300], c2: [18, 380], to: [42, 460] },
+    { c1: [64, 530], c2: [22, 610], to: [46, 690] },
+    { c1: [66, 760], c2: [28, 840], to: [50, 920] },
+    { c1: [58, 955], c2: [48, 980], to: [52, 1000] },
+  ],
+  [
+    [0, 0.15, 1, 0.9], [0, 0.45, -1, 0.85], [0, 0.8, 1, 1.0],
+    [1, 0.2, -1, 0.9], [1, 0.55, 1, 1.1], [1, 0.85, -1, 0.8],
+    [2, 0.25, 1, 0.95], [2, 0.6, -1, 1.05], [2, 0.9, 1, 0.85],
+    [3, 0.3, -1, 1.0], [3, 0.65, 1, 0.9], [3, 0.92, -1, 0.85],
+    [4, 0.25, 1, 0.9],
+  ]
+);
+
+const rightVine = makeVine(
+  [104, 0],
+  [
+    { c1: [80, 60], c2: [122, 140], to: [98, 220] },
+    { c1: [78, 290], c2: [120, 370], to: [96, 450] },
+    { c1: [76, 520], c2: [118, 600], to: [94, 680] },
+    { c1: [76, 750], c2: [114, 830], to: [92, 910] },
+    { c1: [84, 950], c2: [94, 980], to: [90, 1000] },
+  ],
+  [
+    [0, 0.25, -1, 0.9], [0, 0.55, 1, 0.85], [0, 0.9, -1, 1.05],
+    [1, 0.3, 1, 0.9], [1, 0.65, -1, 1.0],
+    [2, 0.1, 1, 0.85], [2, 0.45, -1, 1.1], [2, 0.8, 1, 0.9],
+    [3, 0.2, -1, 0.95], [3, 0.55, 1, 1.05], [3, 0.85, -1, 0.85],
+    [4, 0.25, -1, 0.9],
+  ]
+);
+
+/** Hero "job drops": chips fall in from the top like drops through a pipe. */
+const drops = [
+  { ...placements[3], x: 'left:7%', y: 'top:56%', d: '0.9s' },
+  { ...placements[1], x: 'left:13%', y: 'top:74%', d: '1.08s' },
+  { ...placements[0], x: 'right:22%', y: 'top:80%', d: '1.26s' },
+  { ...placements[2], x: 'right:5%', y: 'top:70%', d: '1.44s' },
+  { ...placements[4], x: 'right:13%', y: 'top:54%', d: '1.62s' },
+];
 ---
 <Layout
-  title="The Pipeline · A fellow-run community across the UC system"
+  title="The Pipeline · From campus to career"
   description={site.description}
-  ogTitle="The Pipeline · Across the UC system"
+  ogTitle="The Pipeline · From campus to career"
   ogDescription={site.ogDescription}
+  bare
+  themeColor="#53B72A"
 >
-  {/* ── Hero: under the canopy ───────────────────────────── */}
-  <section class="on-ink relative overflow-hidden bg-canopy pb-24 pt-[88px] text-ondark max-[560px]:pb-16 max-[560px]:pt-14">
-    <div aria-hidden="true" class="pointer-events-none absolute inset-0">
-      <img
-        src="/img/hero-students.webp"
-        alt=""
-        width="1800"
-        height="1208"
-        decoding="async"
-        fetchpriority="low"
-        class="absolute inset-y-0 right-0 h-full w-full object-cover object-center opacity-15 md:w-[62%] md:opacity-40"
-      />
-      <div class="photo-wash-right absolute inset-0 hidden md:block"></div>
-      <div class="absolute inset-0 bg-canopy/80 md:hidden"></div>
-      <div class="light-shaft"></div>
-    </div>
+  <div class="landing">
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <defs>
+        <symbol id="sprout-mark" viewBox="0 0 120 130">
+          <g fill="none" stroke="#A6E17A" stroke-width="7" stroke-linecap="round">
+            <path d="M60 78 H106"/><path d="M60 78 V96 L46 112"/><path d="M60 96 L76 106"/><path d="M60 78 L38 90"/>
+          </g>
+          <g fill="#A6E17A">
+            <circle cx="110" cy="78" r="5"/><circle cx="43" cy="115" r="5"/><circle cx="79" cy="108" r="5"/><circle cx="34" cy="92" r="5"/>
+          </g>
+          <path d="M60 40 V78" fill="none" stroke="#53B72A" stroke-width="11" stroke-linecap="round"/>
+          <path d="M60 40 C57 24 48 10 30 5 C32 23 44 36 60 40 Z" fill="#4DAE2A"/>
+          <path d="M62 46 C70 33 85 25 103 27 C96 42 80 50 62 46 Z" fill="#8FD460"/>
+        </symbol>
+        <symbol id="seed-mono" viewBox="0 0 120 130">
+          <path d="M60 14 C88 26 100 58 84 92 C76 108 44 108 36 92 C20 58 32 26 60 14 Z" fill="#FFFFFF"/>
+          <path d="M48 64 L58 54 L52 42" fill="none" stroke="#53B72A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M60 106 V122" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="sprout-mono" viewBox="0 0 120 130">
+          <g fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round">
+            <path d="M60 78 H106"/><path d="M60 78 V96 L46 112"/><path d="M60 96 L76 106"/><path d="M60 78 L38 90"/>
+          </g>
+          <g fill="#FFFFFF">
+            <circle cx="110" cy="78" r="5"/><circle cx="43" cy="115" r="5"/><circle cx="79" cy="108" r="5"/><circle cx="34" cy="92" r="5"/>
+          </g>
+          <path d="M60 40 V78" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round"/>
+          <path d="M60 40 C57 24 48 10 30 5 C32 23 44 36 60 40 Z" fill="#FFFFFF"/>
+          <path d="M62 46 C70 33 85 25 103 27 C96 42 80 50 62 46 Z" fill="#FFFFFF"/>
+        </symbol>
+        {/* One pinnate sprig: short stalk, two opposite leaflet pairs and a
+            terminal leaflet, all real leaf-sized. Placed along the vines via
+            <use> with rotate/scale from computed curve tangents. Points +x. */}
+        <path id="leaflet" d="M0 0 C5 -6 13 -8 19 -4 C21 -2 21 -1 19 1 C13 4 5 3 0 0 Z"/>
+        <g id="sprig">
+          <path d="M0 0 C9 1 18 4 26 10" fill="none" stroke="#6BC241" stroke-width="2.5" stroke-linecap="round"/>
+          <g transform="translate(8 1) rotate(-52) scale(0.75)"><use href="#leaflet" fill="#4DAE2A"/></g>
+          <g transform="translate(8 1) rotate(58) scale(0.7)"><use href="#leaflet" fill="#8FD460"/></g>
+          <g transform="translate(17 4) rotate(-38) scale(0.9)"><use href="#leaflet" fill="#8FD460"/></g>
+          <g transform="translate(17 4) rotate(46) scale(0.85)"><use href="#leaflet" fill="#4DAE2A"/></g>
+          <g transform="translate(26 10) rotate(10)"><use href="#leaflet" fill="#8FD460"/></g>
+        </g>
+      </defs>
+    </svg>
 
-    <div class="wrap relative">
-      <Eyebrow tone="onDark" class="animate-riseIn flex" as="div">{hero.eyebrow}</Eyebrow>
-      <h1
-        class="animate-riseIn mb-[26px] mt-[26px] max-w-[17ch] font-display text-hero font-semibold tracking-tight text-ondark"
-        style="animation-delay:80ms"
-      >
-        We don't fix the pipeline. We <span class="hl-gold">are</span> the pipeline.
-      </h1>
-      <p
-        class="animate-riseIn mb-[34px] max-w-[54ch] text-lede text-ondark-soft [&_b]:font-semibold [&_b]:text-ondark"
-        style="animation-delay:160ms"
-      >
-        A fellow-run community across the UC system moving underrepresented <b>undergrads in tech</b>
-        into the rooms they were kept out of, through <b>gatekept job drops</b>, <b>resume reviews</b>,
-        and <b>mock interviews</b> run by people who have already landed.
-      </p>
-      <div class="animate-riseIn flex flex-wrap items-center gap-3" style="animation-delay:240ms">
-        <Button href="/join/" arrow>Join the Pipeline</Button>
-        <Button href="/how/" variant="ghostDark">See how it works</Button>
+    <nav class="pill-nav" aria-label="Main">
+      <a class="nav-brand" href="/">
+        <svg aria-hidden="true"><use href="#sprout-mark"/></svg>
+        The Pipeline
+      </a>
+      <div class="nav-links">
+        {nav.map((item) => <a href={item.href}>{item.label}</a>)}
       </div>
-      <div
-        class="label animate-riseIn mt-8 inline-flex items-center gap-2.5 rounded-pill border border-line-dark bg-canopy-2/70 px-4 py-2.5 text-[0.68rem] text-ondark-soft"
-        style="animation-delay:300ms"
-      >
-        <span class="h-2 w-2 flex-none rounded-full bg-gold" aria-hidden="true"></span>
-        {hero.proof}
-      </div>
-      <div class="animate-riseIn mt-16" style="animation-delay:360ms">
-        <Conduit tone="dark" notes />
-      </div>
-    </div>
-  </section>
+      <a class="nav-join" href={navCta.href}>{navCta.label}</a>
+    </nav>
 
-  {/* ── Drop feed ────────────────────────────────────────── */}
-  <section class="on-ink relative overflow-hidden border-y border-line-dark bg-canopy-2 py-12 text-ondark">
-    <div aria-hidden="true" class="light-shaft-soft"></div>
-    <div class="wrap relative">
-      <div class="mb-6 flex items-end justify-between gap-4">
-        <Eyebrow tone="onDark">Where our fellows have landed</Eyebrow>
-        <a
-          href="/outcomes/"
-          class="label hidden text-[0.7rem] text-gold transition-colors hover:text-gold-pale md:inline"
-        >
-          See all outcomes &rarr;
-        </a>
-      </div>
-    </div>
-    <DropFeed placements={placements} client:visible />
-    <div class="wrap relative">
-      <div class="mt-6 md:hidden">
-        <a href="/outcomes/" class="label text-[0.7rem] text-gold">See all outcomes &rarr;</a>
-      </div>
-    </div>
-  </section>
+    <section class="hero">
+      {/* With the plant story on, the watermark is the seed it grows from. */}
+      <svg class="watermark" aria-hidden="true"><use href={SHOW_PLANT ? '#seed-mono' : '#sprout-mono'}/></svg>
+      <div class="seed-dot s1" aria-hidden="true"></div>
+      <div class="seed-dot s2" aria-hidden="true"></div>
+      <div class="seed-dot s3" aria-hidden="true"></div>
+      <div class="seed-dot s4" aria-hidden="true"></div>
 
-  {/* ── Stats ────────────────────────────────────────────── */}
-  <section class="py-20 md:py-24">
-    <div class="wrap">
-      <ScrollReveal client:visible>
-        <StatGrid />
-      </ScrollReveal>
-    </div>
-  </section>
-
-  {/* ── How it works (teaser) ────────────────────────────── */}
-  <section class="pb-20 md:pb-28">
-    <div class="wrap">
-      <SectionHead eyebrow="How it works" title="Three stages, one direction: forward." class="mb-12" />
-      <ScrollReveal
-        stagger
-        client:visible
-        className="grid grid-cols-3 gap-5 max-[860px]:grid-cols-2 max-[560px]:grid-cols-1"
-      >
+      {/* Gatekept job drops, literally dropping in. Real placements. */}
+      <ul class="drops" aria-label="Where fellows have landed">
         {
-          stages.map((s) => (
-            <StageCard num={s.num} label={s.label} title={s.title} body={s.short} />
+          drops.map((p) => (
+            <li class="drop" style={`${p.x};${p.y};--d:${p.d}`}>
+              {p.logo && <img src={p.logo} alt="" loading="eager" decoding="async" />}
+              <span>{p.org}</span>
+            </li>
           ))
         }
-      </ScrollReveal>
-      <div class="mt-10">
-        <Button href="/how/" variant="ghost" arrow>See what every fellow gets</Button>
+      </ul>
+
+      <h1>Pipeline</h1>
+      <svg class="underline" viewBox="0 0 380 24" fill="none" aria-hidden="true">
+        <path
+          d="M6 14 C 90 4, 190 22, 290 10 S 360 12, 374 10"
+          stroke="#A6E17A"
+          stroke-width="8"
+          stroke-linecap="round"
+        />
+      </svg>
+      <p class="tagline">
+        A fellow-run community moving underrepresented undergrads in tech from campus into the
+        rooms they were kept out of.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-join" href="/join/">Join the Pipeline</a>
+        <a class="btn btn-learn" href="#how">Learn more</a>
       </div>
-    </div>
-  </section>
+    </section>
 
-  {/* ── Mission (teaser) ─────────────────────────────────── */}
-  <section class="on-ink relative overflow-hidden bg-canopy py-24 text-ondark">
-    <img
-      src="/img/mission-students.webp"
-      alt=""
-      aria-hidden="true"
-      loading="lazy"
-      decoding="async"
-      width="1600"
-      height="1104"
-      class="absolute inset-0 h-full w-full object-cover opacity-15"
-    />
-    <div aria-hidden="true" class="photo-wash-ink absolute inset-0"></div>
-    <div aria-hidden="true" class="light-shaft"></div>
-    <div class="wrap relative">
-      <ScrollReveal client:visible>
-        <div class="mx-auto max-w-3xl text-center">
-          <Eyebrow tone="onDark" class="justify-center">Why we exist</Eyebrow>
-          <h2
-            class="mx-auto mt-5 max-w-[20ch] font-display text-[clamp(2rem,5vw,3.4rem)] font-semibold leading-[1.08] tracking-tight text-ondark"
-          >
-            The talent was <span class="hl-gold">never</span> the problem.
-          </h2>
-          <p
-            class="mx-auto mt-6 max-w-[58ch] text-[clamp(1.05rem,1.7vw,1.3rem)] leading-relaxed text-ondark-soft [&_b]:font-semibold [&_b]:text-ondark"
-          >
-            People call it the "pipeline problem", as if the talent is not out there. It is. What is
-            gatekept is <b>access</b>. The Pipeline hands that access to the people who have been
-            locked out of it, and lets the work speak for itself.
-          </p>
-          <div class="mt-8 flex justify-center">
-            <Button href="/about/" variant="ghostDark" arrow>Read the whole story</Button>
-          </div>
+    {/* Scroll zone: roots grow down both edges as you move through it. */}
+    <div class="grow" id="grow">
+      <svg class="roots roots-left" viewBox="0 0 140 1000" preserveAspectRatio="none" aria-hidden="true">
+        <path class="trace-draw trunk" pathLength="1" data-start="0" data-end="1" d={leftVine.d}/>
+        {
+          leftVine.sprigs.map((s) => (
+            <g class="leaf pop-grow" data-at={s.at} style={`transform-origin:${s.x}px ${s.y}px`}>
+              <g transform={`translate(${s.x} ${s.y}) rotate(${s.rot}) scale(${s.scale})`}>
+                <use href="#sprig"/>
+              </g>
+            </g>
+          ))
+        }
+      </svg>
+      <svg class="roots roots-right" viewBox="0 0 140 1000" preserveAspectRatio="none" aria-hidden="true">
+        <path class="trace-draw trunk" pathLength="1" data-start="0" data-end="1" d={rightVine.d}/>
+        {
+          rightVine.sprigs.map((s) => (
+            <g class="leaf pop-grow" data-at={s.at} style={`transform-origin:${s.x}px ${s.y}px`}>
+              <g transform={`translate(${s.x} ${s.y}) rotate(${s.rot}) scale(${s.scale})`}>
+                <use href="#sprig"/>
+              </g>
+            </g>
+          ))
+        }
+      </svg>
+
+      <section id="how" class="how">
+        <h2>Three stages, one direction: forward.</h2>
+        <div class="cards">
+          {
+            stages.map((s) => (
+              <article class="card">
+                <span class="stage-label">{s.num} · {s.label}</span>
+                <h3>{s.title}</h3>
+                <p>{s.short}</p>
+              </article>
+            ))
+          }
         </div>
-      </ScrollReveal>
-    </div>
-  </section>
+      </section>
 
-  {/* ── Join CTA ─────────────────────────────────────────── */}
-  <section class="py-20">
-    <div class="wrap">
-      <CtaBand eyebrow="Join" title="Get in the pipeline.">
-        <Fragment slot="body">
-          Undergrad, underrepresented in tech, and tired of doing this alone?
-          <b>You're who we built this for.</b> It's free, it's run by fellows, and it works.
-        </Fragment>
-        <Fragment slot="actions">
-          <Button href="/join/" arrow>How to join</Button>
-          <Button href="/join/" variant="ghostDark">Join the Discord</Button>
-        </Fragment>
-      </CtaBand>
+      <section class="stats" aria-label="The Pipeline in numbers">
+        {
+          stats.map((s) => (
+            <div class="stat">
+              <span class="num">{s.num}</span>
+              <span class="cap">{s.cap}</span>
+            </div>
+          ))
+        }
+      </section>
+
+      <section class="cta">
+        <div class="cta-panel">
+          <h2>Get in the pipeline.</h2>
+          <p>It's free, it's run by fellows, and it works.</p>
+          <a class="btn btn-join" href="/join/">Join the Pipeline</a>
+        </div>
+        <p class="footer-line">{footer.builtBy} · {footer.copyright}</p>
+      </section>
     </div>
-  </section>
+
+    {/* Seed-to-plant scroll story: fixed bottom right, grows with progress.
+        Painted behind content, hidden on narrow screens. */}
+    {SHOW_PLANT && (
+    <div class="plant" id="plant" aria-hidden="true">
+      <svg viewBox="0 0 240 340">
+        <g class="seed-shrink" data-at="0.12">
+          <ellipse cx="150" cy="318" rx="15" ry="19" fill="#1C4A12"/>
+          <path d="M143 314 L152 306 L147 298" fill="none" stroke="#A6E17A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+        <path class="trace-draw stem" pathLength="1" data-start="0.06" data-end="0.5"
+          d="M150 330 C146 300 154 262 148 220 C144 190 152 158 147 118"/>
+        <g class="pop-grow" data-at="0.28" style="transform-origin:149px 262px">
+          <path d="M149 262 C129 258 116 246 112 228 C132 232 145 244 149 262 Z" fill="#4DAE2A"/>
+        </g>
+        <g class="pop-grow" data-at="0.40" style="transform-origin:148px 226px">
+          <path d="M148 226 C168 222 181 210 185 192 C165 196 152 208 148 226 Z" fill="#8FD460"/>
+        </g>
+        <path class="trace-draw twig" pathLength="1" data-start="0.50" data-end="0.62" d="M148 200 C132 192 118 188 100 188"/>
+        <path class="trace-draw twig" pathLength="1" data-start="0.60" data-end="0.72" d="M147 165 C163 156 178 152 198 154"/>
+        <path class="root-dot" data-at="0.63" d="M96 188 l0.01 0"/>
+        <path class="root-dot" data-at="0.73" d="M202 154 l0.01 0"/>
+        <g class="pop-grow" data-at="0.78" style="transform-origin:147px 118px">
+          <path d="M147 118 C142 104 132 94 118 90 C122 106 133 115 147 118 Z" fill="#4DAE2A"/>
+          <path d="M147 118 C152 103 162 93 177 90 C173 106 161 116 147 118 Z" fill="#8FD460"/>
+        </g>
+      </svg>
+      <span class="chip pop-grow" data-at="0.85" style="left:30%;top:54%">
+        <img src="/img/logos/capital-one.webp" alt="" loading="lazy" decoding="async" />Capital One
+      </span>
+      <span class="chip pop-grow" data-at="0.92" style="left:80%;top:37%">
+        <img src="/img/logos/amazon.webp" alt="" loading="lazy" decoding="async" />Amazon
+      </span>
+      <span class="chip pop-grow" data-at="0.98" style="left:52%;top:16%">
+        <img src="/img/logos/mlt.webp" alt="" loading="lazy" decoding="async" />MLT
+      </span>
+    </div>
+    )}
+  </div>
 </Layout>
+
+<script>
+  const grow = document.getElementById('grow');
+  const plant = document.getElementById('plant');
+  const traces = Array.from(document.querySelectorAll<SVGPathElement>('.trace-draw'));
+  const pops = Array.from(document.querySelectorAll<HTMLElement>('[data-at]'));
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (reduced || !grow) {
+    for (const t of traces) t.style.strokeDashoffset = '0';
+    for (const p of pops) p.classList.add('on');
+  } else {
+    let ticking = false;
+    const render = () => {
+      ticking = false;
+      const rect = grow.getBoundingClientRect();
+      const progress = Math.min(1, Math.max(0, (window.innerHeight - rect.top) / rect.height));
+      for (const t of traces) {
+        const start = Number(t.dataset.start ?? 0);
+        const end = Number(t.dataset.end ?? 1);
+        const local = Math.min(1, Math.max(0, (progress - start) / (end - start)));
+        t.style.strokeDashoffset = String(1 - local);
+      }
+      for (const p of pops) p.classList.toggle('on', progress >= Number(p.dataset.at ?? 0));
+      plant?.classList.toggle('visible', progress > 0.02);
+    };
+    const queue = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(render);
+      }
+    };
+    window.addEventListener('scroll', queue, { passive: true });
+    window.addEventListener('resize', queue, { passive: true });
+    render();
+  }
+</script>
+
+<style>
+  .landing {
+    --sprout: #53b72a;
+    --sprout-deep: #3e9b1f;
+    --lime: #a6e17a;
+    --fern: #1c4a12;
+    --cream: #fbfff4;
+    --radius-pill: 999px;
+
+    position: relative;
+    font-family: 'Quicksand', ui-sans-serif, system-ui, sans-serif;
+    color: #fff;
+  }
+
+  /* ---------- white pill nav ---------- */
+  .pill-nav {
+    position: fixed;
+    top: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--cream);
+    border-radius: var(--radius-pill);
+    padding: 8px 10px 8px 16px;
+    box-shadow: 0 10px 30px rgba(28, 74, 18, 0.28);
+    max-width: calc(100vw - 32px);
+  }
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Baloo 2', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--sprout-deep);
+    text-decoration: none;
+    margin-right: 8px;
+    white-space: nowrap;
+  }
+  .nav-brand svg { width: 24px; height: 26px; }
+  .nav-links { display: flex; gap: 2px; }
+  .nav-links a {
+    text-decoration: none;
+    color: var(--fern);
+    font-weight: 700;
+    font-size: 14.5px;
+    padding: 8px 14px;
+    border-radius: var(--radius-pill);
+    transition: background 0.18s ease;
+  }
+  .nav-links a:hover { background: rgba(166, 225, 122, 0.4); }
+  .nav-links a:focus-visible,
+  .nav-brand:focus-visible,
+  .btn:focus-visible,
+  .nav-join:focus-visible {
+    outline: 3px solid var(--fern);
+    outline-offset: 2px;
+  }
+  .nav-join {
+    font-weight: 700;
+    font-size: 14.5px;
+    color: var(--fern);
+    background: var(--lime);
+    border-radius: var(--radius-pill);
+    padding: 9px 18px;
+    text-decoration: none;
+    margin-left: 4px;
+    transition: background 0.18s ease;
+  }
+  .nav-join:hover { background: var(--sprout); color: #fff; }
+
+  /* ---------- hero ---------- */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    z-index: 5;
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 90px 20px 70px;
+    background:
+      radial-gradient(ellipse 90% 70% at 50% -10%, #66c63c 0%, rgba(102, 198, 60, 0) 60%),
+      var(--sprout);
+  }
+  .watermark {
+    position: absolute;
+    right: -4vw;
+    bottom: 5vh;
+    width: 30vw;
+    max-width: 380px;
+    aspect-ratio: 120 / 130;
+    opacity: 0.14;
+    pointer-events: none;
+  }
+  .seed-dot {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--lime);
+    opacity: 0.35;
+    pointer-events: none;
+    animation: bob 7s ease-in-out infinite alternate;
+  }
+  .seed-dot.s1 { width: 22px; height: 22px; left: 12vw; top: 24vh; }
+  .seed-dot.s2 { width: 12px; height: 12px; left: 22vw; top: 66vh; animation-delay: 1.4s; }
+  .seed-dot.s3 { width: 16px; height: 16px; right: 20vw; top: 20vh; animation-delay: 0.8s; }
+  .seed-dot.s4 { width: 10px; height: 10px; right: 30vw; top: 58vh; animation-delay: 2.2s; }
+  @keyframes bob {
+    from { transform: translateY(0); }
+    to { transform: translateY(-26px); }
+  }
+
+  /* falling job-drop chips */
+  .drops {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .drop {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    border-radius: var(--radius-pill);
+    padding: 8px 14px;
+    box-shadow: 0 8px 22px rgba(28, 74, 18, 0.28);
+    color: var(--fern);
+    font-weight: 700;
+    font-size: 13.5px;
+    white-space: nowrap;
+    animation:
+      drop-in 1s cubic-bezier(0.22, 1.4, 0.36, 1) var(--d) both,
+      bob-sm 6.5s ease-in-out calc(var(--d) + 1.2s) infinite alternate;
+  }
+  .drop img { height: 16px; width: auto; border-radius: 4px; }
+  @keyframes drop-in {
+    from { transform: translateY(-95vh) rotate(-5deg); }
+    to { transform: translateY(0) rotate(0deg); }
+  }
+  @keyframes bob-sm {
+    from { transform: translateY(0); }
+    to { transform: translateY(-9px); }
+  }
+
+  h1 {
+    position: relative;
+    z-index: 2;
+    font-family: 'Baloo 2', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 800;
+    font-size: clamp(72px, 14vw, 160px);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    color: #fff;
+    text-shadow: 0 6px 0 rgba(28, 74, 18, 0.25);
+    margin: 0;
+    animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .underline {
+    position: relative;
+    z-index: 2;
+    width: clamp(180px, 32vw, 380px);
+    margin-top: 6px;
+    animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.1s both;
+  }
+  .tagline {
+    position: relative;
+    z-index: 2;
+    font-size: clamp(16px, 2.2vw, 20px);
+    font-weight: 600;
+    color: var(--cream);
+    max-width: 520px;
+    margin: 20px 0 0;
+    animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.18s both;
+  }
+  .cta-row {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 34px;
+    animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.26s both;
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .btn {
+    font-weight: 700;
+    font-size: 17px;
+    border-radius: var(--radius-pill);
+    padding: 16px 34px;
+    text-decoration: none;
+    transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
+  }
+  .btn-join {
+    color: var(--sprout-deep);
+    background: var(--cream);
+    box-shadow: 0 10px 26px rgba(28, 74, 18, 0.3);
+  }
+  .btn-join:hover { background: var(--lime); color: var(--fern); transform: translateY(-2px); }
+  .btn-learn {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.65);
+  }
+  .btn-learn:hover { background: rgba(255, 255, 255, 0.22); transform: translateY(-2px); }
+
+  /* ---------- scroll zone with growing roots ---------- */
+  .grow {
+    position: relative;
+    background: var(--cream);
+    color: var(--fern);
+  }
+  .roots {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    height: 100%;
+    width: 140px;
+    z-index: 0;
+    pointer-events: none;
+    /* Fronds may bleed past the column; clipping them looks pruned. */
+    overflow: visible;
+  }
+  .roots-left { left: 0; }
+  .roots-right { right: 0; }
+  .trace-draw {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    transition: stroke-dashoffset 0.2s linear;
+  }
+  .trace-draw.trunk { stroke: var(--sprout); stroke-width: 6; }
+  .root-dot {
+    fill: none;
+    stroke: var(--sprout);
+    stroke-width: 14;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+  .root-dot.on { opacity: 1; }
+
+  .grow section {
+    position: relative;
+    z-index: 1;
+    max-width: 880px;
+    margin: 0 auto;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+  .grow h2 {
+    font-family: 'Baloo 2', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 800;
+    font-size: clamp(30px, 4.5vw, 46px);
+    letter-spacing: -0.01em;
+    color: var(--fern);
+    text-align: center;
+    margin: 0;
+  }
+
+  /* how it works */
+  .how { padding-top: 110px; padding-bottom: 40px; }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 48px;
+  }
+  .card {
+    background: #fff;
+    border: 2px solid rgba(166, 225, 122, 0.6);
+    border-radius: 24px;
+    padding: 28px 26px;
+    box-shadow: 0 12px 28px rgba(28, 74, 18, 0.08);
+  }
+  .stage-label {
+    font-family: 'Baloo 2', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sprout-deep);
+  }
+  .card h3 {
+    font-family: 'Baloo 2', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--fern);
+    margin: 10px 0 8px;
+  }
+  .card p {
+    font-weight: 500;
+    font-size: 15.5px;
+    line-height: 1.55;
+    color: rgba(28, 74, 18, 0.78);
+    margin: 0;
+  }
+
+  /* stats */
+  .stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 18px 48px;
+    padding-top: 50px;
+    padding-bottom: 60px;
+    text-align: center;
+  }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .num {
+    font-family: 'Baloo 2', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 800;
+    font-size: clamp(34px, 4vw, 46px);
+    color: var(--sprout);
+    line-height: 1;
+  }
+  .cap { font-weight: 600; font-size: 14px; color: rgba(28, 74, 18, 0.75); }
+
+  /* join CTA */
+  .cta { padding-bottom: 46px; }
+  .cta-panel {
+    background:
+      radial-gradient(ellipse 90% 90% at 50% -20%, #66c63c 0%, rgba(102, 198, 60, 0) 60%),
+      var(--sprout);
+    border-radius: 32px;
+    padding: 62px 36px;
+    text-align: center;
+    box-shadow: 0 18px 40px rgba(28, 74, 18, 0.22);
+  }
+  .cta-panel h2 { color: #fff; text-shadow: 0 3px 0 rgba(28, 74, 18, 0.22); }
+  .cta-panel p {
+    color: var(--cream);
+    font-weight: 600;
+    font-size: clamp(15px, 2vw, 18px);
+    margin: 12px 0 28px;
+  }
+  .cta-panel .btn-join { display: inline-block; }
+  .footer-line {
+    text-align: center;
+    font-weight: 600;
+    font-size: 13px;
+    color: rgba(28, 74, 18, 0.6);
+    margin: 34px 0 0;
+  }
+
+  /* ---------- seed-to-plant scroll story ---------- */
+  .plant {
+    position: fixed;
+    /* Centered between the CTA panel's right edge (about 50vw + 416px with
+       the rail's padding) and the right vine, but never behind the panel:
+       whichever of the two is further right wins. */
+    left: max(calc(50vw + 424px), calc(75vw + 55px));
+    bottom: 6px;
+    width: 190px;
+    aspect-ratio: 240 / 340;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .plant.visible { opacity: 1; transform: translateY(0); }
+  .plant svg { width: 100%; height: 100%; overflow: visible; }
+  .trace-draw.stem { stroke: var(--sprout); stroke-width: 9; }
+  .trace-draw.twig { stroke: var(--sprout-deep); stroke-width: 6; }
+  .seed-shrink {
+    transform-origin: 150px 318px;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .seed-shrink.on { opacity: 0; transform: scale(0.4); }
+  .pop-grow {
+    transform: scale(0);
+    transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .pop-grow.on { transform: scale(1); }
+  .chip {
+    position: absolute;
+    translate: -50% -100%;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    border: 2px solid var(--lime);
+    border-radius: var(--radius-pill);
+    padding: 5px 10px;
+    color: var(--fern);
+    font-weight: 700;
+    font-size: 11.5px;
+    white-space: nowrap;
+    box-shadow: 0 8px 20px rgba(28, 74, 18, 0.14);
+  }
+  .chip img { height: 12px; width: auto; border-radius: 3px; }
+
+  @media (max-width: 1399px) {
+    .plant { display: none; }
+  }
+  @media (max-width: 900px) {
+    .drop:nth-child(n + 4) { display: none; }
+  }
+  @media (max-width: 860px) {
+    .cards { grid-template-columns: 1fr; }
+    .roots { width: 56px; opacity: 0.85; }
+    /* The squeezed viewBox would warp the filled leaf blades; keep the
+       curved root strokes (non-scaling) and drop the leaves. */
+    .roots .leaf { display: none; }
+  }
+  @media (max-width: 680px) {
+    .nav-links { display: none; }
+    .watermark { width: 52vw; right: -14vw; opacity: 0.12; }
+    .drop:nth-child(n + 3) { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .seed-dot, h1, .underline, .tagline, .cta-row { animation: none; }
+    .drop { animation: none; }
+    .btn, .nav-join { transition: none; }
+    .trace-draw, .root-dot, .pop-grow, .seed-shrink { transition: none; }
+    .plant { display: none; }
+  }
+</style>
