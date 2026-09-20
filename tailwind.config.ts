@@ -15,45 +15,45 @@ export default {
       colors: {
         // ── Sprout & Lime core (legacy names) ───────────────
         canopy: {
-          DEFAULT: '#17380E', // deep fern (hero bands, footer)
-          2: '#1C4A12', // lifted dark surface (cards on fern)
-          3: '#265F17', // hover dark surface
+          DEFAULT: '#143D2B', // deep grove (hero bands, footer)
+          2: '#1B4E37', // lifted dark surface (cards on grove)
+          3: '#236048', // hover dark surface
         },
         gold: {
-          DEFAULT: '#A6E17A', // lime accent on dark (links, marks)
-          deep: '#3E9B1F', // sprout that passes contrast on cream
-          bright: '#53B72A', // primary button fill (sprout)
-          pale: '#CDF0A9', // gradient light end / button hover
+          DEFAULT: '#6FCF6A', // spring accent on dark (links, marks)
+          deep: '#256B3C', // pine that passes contrast on light
+          bright: '#6FCF6A', // primary button fill (spring)
+          pale: '#8CDD88', // gradient light end / button hover
         },
         // ── Legacy-named roles, retoned (low-touch aliases) ──
-        bg: '#F2F9EA', // pale leaf cream (reading sections)
-        surface: '#FBFFF4', // cards, lifted panels, header bar
+        bg: '#F3F8EE', // snowdrop (reading sections)
+        surface: '#FCFEF9', // cards, lifted panels, header bar
         ink: {
-          DEFAULT: '#1E3315', // dark loam green: primary text on cream
-          2: '#1C4A12', // = canopy.2 (fern)
-          soft: '#587A4A', // muted moss body text (AA on cream)
+          DEFAULT: '#1B3526', // dark grove ink: primary text on light
+          2: '#1B4E37', // = canopy.2 (grove)
+          soft: '#4E6B54', // muted moss body text (AA on snowdrop)
         },
         line: {
-          DEFAULT: '#DCEBCB', // soft hairlines on cream
-          strong: '#A9C98F', // hover border on cream
-          dark: 'rgba(230,247,214,0.16)', // hairlines on fern
+          DEFAULT: '#DCE7D6', // soft hairlines on snowdrop
+          strong: '#A9C0A6', // hover border on snowdrop
+          dark: 'rgba(223,238,221,0.16)', // hairlines on grove
         },
         brand: {
-          DEFAULT: '#2E6B1C', // mid green: secondary fills, chips
-          deep: '#245415', // hover green
-          soft: '#E6F5D5', // lime tint fills, callout bg
+          DEFAULT: '#256B3C', // pine: secondary fills, chips
+          deep: '#1D5530', // hover pine
+          soft: '#E3EFDD', // spring tint fills, callout bg
         },
-        signal: '#3E9B1F', // = gold.deep (arrival marks on light surfaces)
+        signal: '#256B3C', // = gold.deep (arrival marks on light surfaces)
         ondark: {
-          DEFAULT: '#F2FBEA', // pale cream text on fern
-          soft: '#AFD49B', // muted lime-sage text on fern
-          link: '#A6E17A', // links on fern (lime)
+          DEFAULT: '#F3F8EE', // snowdrop text on grove
+          soft: '#C4DAC4', // muted sage text on grove
+          link: '#6FCF6A', // links on grove (spring)
         },
       },
       fontFamily: {
-        display: ['"Baloo 2"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        sans: ['Quicksand', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        mono: ['Quicksand', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['"Young Serif"', 'Georgia', 'ui-serif', 'serif'],
+        sans: ['"Instrument Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"Instrument Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       // Type scale: fluid via clamp(), tuned for a serif display face.
       fontSize: {
@@ -89,8 +89,8 @@ export default {
         },
         // Soft breathing glow for the conduit arrival tip.
         glow: {
-          '0%, 100%': { boxShadow: '0 0 0 6px rgba(166,225,122,0.22)' },
-          '50%': { boxShadow: '0 0 0 11px rgba(166,225,122,0.09)' },
+          '0%, 100%': { boxShadow: '0 0 0 6px rgba(111,207,106,0.22)' },
+          '50%': { boxShadow: '0 0 0 11px rgba(111,207,106,0.09)' },
         },
       },
       animation: {

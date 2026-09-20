@@ -47,8 +47,8 @@
   }
 
   ::selection {
-    background: #2e6b1c;
-    color: #e9fbd8;
+    background: #256b3c;
+    color: #e3f5e0;
   }
 
   /* Visible focus everywhere: sprout ring, rounded. */
@@ -63,6 +63,13 @@
 }
 
 @layer components {
+  /* Young Serif ships a single 400 weight; pin it so font-semibold/bold on
+     display headings doesn't trigger ugly synthesized bolding. */
+  .font-display {
+    font-weight: 400 !important;
+    font-synthesis-weight: none;
+  }
+
   /* Centered content rail. */
   .wrap {
     @apply mx-auto w-full max-w-site px-6;
@@ -81,15 +88,15 @@
     inset: 0;
     pointer-events: none;
     background:
-      radial-gradient(ellipse 60% 90% at 78% -10%, rgba(166, 225, 122, 0.26), transparent 60%),
-      radial-gradient(ellipse 40% 60% at 62% -5%, rgba(205, 240, 169, 0.13), transparent 55%),
-      linear-gradient(112deg, transparent 46%, rgba(166, 225, 122, 0.05) 55%, transparent 68%);
+      radial-gradient(ellipse 60% 90% at 78% -10%, rgba(111, 207, 106, 0.2), transparent 60%),
+      radial-gradient(ellipse 40% 60% at 62% -5%, rgba(167, 228, 163, 0.12), transparent 55%),
+      linear-gradient(112deg, transparent 46%, rgba(111, 207, 106, 0.045) 55%, transparent 68%);
   }
   .light-shaft-soft {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: radial-gradient(ellipse 55% 70% at 80% -12%, rgba(166, 225, 122, 0.15), transparent 62%);
+    background: radial-gradient(ellipse 55% 70% at 80% -12%, rgba(111, 207, 106, 0.12), transparent 62%);
   }
 
   /* Skip link, visible only on focus. */

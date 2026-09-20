@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pipeline · Font and color options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Sora:wght@400;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body { font-family: 'Inter', sans-serif; }
+
+  .opt {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    padding: 90px 24px 60px;
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  .tag {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
+    opacity: 0.55;
+  }
+
+  .mini-nav {
+    position: absolute;
+    top: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--nav-bg);
+    border: 1px solid var(--nav-line);
+    border-radius: 999px;
+    padding: 8px 10px 8px 18px;
+    box-shadow: 0 10px 30px rgba(10, 30, 18, 0.12);
+    white-space: nowrap;
+  }
+  .mini-nav .brand {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--primary);
+    margin-right: 10px;
+  }
+  .mini-nav span {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--ink);
+    padding: 7px 12px;
+    border-radius: 999px;
+  }
+  .mini-nav .join {
+    background: var(--primary);
+    color: var(--on-primary);
+    font-weight: 600;
+    margin-left: 6px;
+    padding: 8px 18px;
+  }
+
+  h1 {
+    font-size: clamp(64px, 11vw, 128px);
+    line-height: 1;
+    color: var(--head);
+  }
+  .tagline {
+    max-width: 520px;
+    margin-top: 22px;
+    font-size: 17px;
+    line-height: 1.6;
+    font-weight: 450;
+    color: var(--ink);
+    opacity: 0.85;
+  }
+  .cta-row { display: flex; gap: 14px; margin-top: 36px; flex-wrap: wrap; justify-content: center; }
+  .btn {
+    border-radius: 999px;
+    padding: 15px 32px;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    font-family: inherit;
+  }
+  .btn-join { background: var(--primary); color: var(--on-primary); box-shadow: 0 10px 26px rgba(10, 30, 18, 0.18); }
+  .btn-learn { color: var(--ink); border: 1.5px solid var(--nav-line); background: var(--nav-bg); }
+
+  .swatches {
+    display: flex;
+    gap: 10px;
+    margin-top: 52px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .swatch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--nav-bg);
+    border: 1px solid var(--nav-line);
+    border-radius: 999px;
+    padding: 6px 14px 6px 7px;
+  }
+  .swatch i { width: 20px; height: 20px; border-radius: 50%; display: block; }
+  .fonts-note { margin-top: 14px; font-size: 13px; opacity: 0.6; }
+
+  /* ── A · Arboretum: editorial serif, deep pine + warm sage cream ── */
+  .opt-a {
+    --bg: #EFF2E9;
+    --ink: #23402E;
+    --head: #1C3A2A;
+    --primary: #2F6D45;
+    --on-primary: #F4F7EE;
+    --nav-bg: #F8FAF3;
+    --nav-line: #D5DECB;
+  }
+  .opt-a h1 { font-family: 'Instrument Serif', serif; font-weight: 400; letter-spacing: -0.01em; }
+  .opt-a h1 em { font-style: italic; color: var(--primary); }
+  .opt-a .mini-nav .brand { font-family: 'Instrument Serif', serif; font-size: 17px; font-weight: 400; }
+
+  /* ── B · Emerald Circuit: grotesk tech, emerald + mint on near-white ── */
+  .opt-b {
+    --bg: #F4FAF6;
+    --ink: #0A3D2C;
+    --head: #0B2E21;
+    --primary: #0F7A4D;
+    --on-primary: #EDFBF3;
+    --nav-bg: #FFFFFF;
+    --nav-line: #D8EBDF;
+  }
+  .opt-b { font-family: 'Inter', sans-serif; }
+  .opt-b h1 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; letter-spacing: -0.03em; }
+  .opt-b h1 .mint { color: #2FBE7E; }
+  .opt-b .mini-nav .brand { font-family: 'Space Grotesk', sans-serif; }
+
+  /* ── C · Moss: quiet geometric, muted olive greens ── */
+  .opt-c {
+    --bg: #F0F2EB;
+    --ink: #2C3A26;
+    --head: #22301E;
+    --primary: #44633F;
+    --on-primary: #F2F5EC;
+    --nav-bg: #F7F8F2;
+    --nav-line: #DBDFD0;
+  }
+  .opt-c { font-family: 'Inter', sans-serif; }
+  .opt-c h1 { font-family: 'Sora', sans-serif; font-weight: 700; letter-spacing: -0.04em; }
+  .opt-c h1 .soft { color: #8FA268; }
+  .opt-c .mini-nav .brand { font-family: 'Sora', sans-serif; }
+
+  /* ── D · Deep Grove: characterful grotesk on deep green, spring accent ── */
+  .opt-d {
+    --bg: #143D2B;
+    --ink: #DFEEDD;
+    --head: #F3F8EE;
+    --primary: #6FCF6A;
+    --on-primary: #10301F;
+    --nav-bg: rgba(243, 248, 238, 0.08);
+    --nav-line: rgba(243, 248, 238, 0.22);
+  }
+  .opt-d { font-family: 'Inter', sans-serif; }
+  .opt-d .tag { color: #DFEEDD; }
+  .opt-d h1 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; letter-spacing: -0.02em; }
+  .opt-d h1 .spring { color: var(--primary); }
+  .opt-d .mini-nav .brand { font-family: 'Bricolage Grotesque', sans-serif; color: #F3F8EE; }
+  .opt-d .mini-nav span { color: #DFEEDD; }
+  .opt-d .btn-learn { border-color: rgba(243, 248, 238, 0.4); color: #F3F8EE; background: transparent; }
+  .opt-d .swatch { color: #DFEEDD; }
+
+  @media (max-width: 720px) {
+    .mini-nav span:not(.join) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+  <section class="opt opt-a">
+    <span class="tag">Option A · Arboretum</span>
+    <div class="mini-nav">
+      <span class="brand">The Pipeline</span>
+      <span>How it works</span><span>Outcomes</span><span>About</span><span>Portal</span>
+      <span class="join">Join</span>
+    </div>
+    <h1>The <em>Pipeline</em></h1>
+    <p class="tagline">A fellow-run community moving underrepresented undergrads in tech from campus into the rooms they were kept out of.</p>
+    <div class="cta-row">
+      <a class="btn btn-join" href="#">Join the Pipeline</a>
+      <a class="btn btn-learn" href="#">Learn more</a>
+    </div>
+    <div class="swatches">
+      <span class="swatch"><i style="background:#1C3A2A"></i>#1C3A2A pine ink</span>
+      <span class="swatch"><i style="background:#2F6D45"></i>#2F6D45 fir</span>
+      <span class="swatch"><i style="background:#8FA977"></i>#8FA977 sage</span>
+      <span class="swatch"><i style="background:#EFF2E9"></i>#EFF2E9 linen</span>
+    </div>
+    <p class="fonts-note">Instrument Serif display · Inter body. Editorial, botanical, calm confidence.</p>
+  </section>
+
+  <section class="opt opt-b">
+    <span class="tag">Option B · Emerald Circuit</span>
+    <div class="mini-nav">
+      <span class="brand">The Pipeline</span>
+      <span>How it works</span><span>Outcomes</span><span>About</span><span>Portal</span>
+      <span class="join">Join</span>
+    </div>
+    <h1>Pipe<span class="mint">line</span></h1>
+    <p class="tagline">A fellow-run community moving underrepresented undergrads in tech from campus into the rooms they were kept out of.</p>
+    <div class="cta-row">
+      <a class="btn btn-join" href="#">Join the Pipeline</a>
+      <a class="btn btn-learn" href="#">Learn more</a>
+    </div>
+    <div class="swatches">
+      <span class="swatch"><i style="background:#0B2E21"></i>#0B2E21 evergreen ink</span>
+      <span class="swatch"><i style="background:#0F7A4D"></i>#0F7A4D emerald</span>
+      <span class="swatch"><i style="background:#2FBE7E"></i>#2FBE7E jade</span>
+      <span class="swatch"><i style="background:#8FE6C0"></i>#8FE6C0 mint</span>
+    </div>
+    <p class="fonts-note">Space Grotesk display · Inter body. Sharp, techy, fits the circuit-roots idea.</p>
+  </section>
+
+  <section class="opt opt-c">
+    <span class="tag">Option C · Moss</span>
+    <div class="mini-nav">
+      <span class="brand">The Pipeline</span>
+      <span>How it works</span><span>Outcomes</span><span>About</span><span>Portal</span>
+      <span class="join">Join</span>
+    </div>
+    <h1>Pipeline<span class="soft">.</span></h1>
+    <p class="tagline">A fellow-run community moving underrepresented undergrads in tech from campus into the rooms they were kept out of.</p>
+    <div class="cta-row">
+      <a class="btn btn-join" href="#">Join the Pipeline</a>
+      <a class="btn btn-learn" href="#">Learn more</a>
+    </div>
+    <div class="swatches">
+      <span class="swatch"><i style="background:#22301E"></i>#22301E loam</span>
+      <span class="swatch"><i style="background:#44633F"></i>#44633F moss</span>
+      <span class="swatch"><i style="background:#8FA268"></i>#8FA268 olive</span>
+      <span class="swatch"><i style="background:#F0F2EB"></i>#F0F2EB stone</span>
+    </div>
+    <p class="fonts-note">Sora display · Inter body. Muted, premium, the quietest of the four.</p>
+  </section>
+
+  <section class="opt opt-d">
+    <span class="tag">Option D · Deep Grove</span>
+    <div class="mini-nav">
+      <span class="brand">The Pipeline</span>
+      <span>How it works</span><span>Outcomes</span><span>About</span><span>Portal</span>
+      <span class="join">Join</span>
+    </div>
+    <h1>Pipe<span class="spring">line</span></h1>
+    <p class="tagline">A fellow-run community moving underrepresented undergrads in tech from campus into the rooms they were kept out of.</p>
+    <div class="cta-row">
+      <a class="btn btn-join" href="#">Join the Pipeline</a>
+      <a class="btn btn-learn" href="#">Learn more</a>
+    </div>
+    <div class="swatches">
+      <span class="swatch"><i style="background:#143D2B"></i>#143D2B grove</span>
+      <span class="swatch"><i style="background:#6FCF6A"></i>#6FCF6A spring</span>
+      <span class="swatch"><i style="background:#DFEEDD"></i>#DFEEDD mistletoe</span>
+      <span class="swatch"><i style="background:#F3F8EE"></i>#F3F8EE snowdrop</span>
+    </div>
+    <p class="fonts-note">Bricolage Grotesque display · Inter body. Still has personality, none of the bubble.</p>
+  </section>
+
+</body>
+</html>
