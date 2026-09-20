@@ -169,12 +169,14 @@ const rightVine = makeVine(
           <span class="proof-label">Fellows have landed at</span>
           <ul aria-label="Where fellows have landed">
             {
-              placements.map((p) => (
-                <li class="chip-logo">
-                  {p.logo && <img src={p.logo} alt="" loading="eager" decoding="async" />}
-                  <span>{p.org}</span>
-                </li>
-              ))
+              placements
+                .filter((p) => p.org !== 'American Express')
+                .map((p) => (
+                  <li class="chip-logo">
+                    {p.logo && <img src={p.logo} alt="" loading="eager" decoding="async" />}
+                    <span>{p.org}</span>
+                  </li>
+                ))
             }
           </ul>
         </div>
@@ -476,12 +478,10 @@ const rightVine = makeVine(
   .proof ul {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 7px;
     list-style: none;
     margin: 0;
     padding: 0;
-    /* Wraps the landed list onto two lines instead of one long strip. */
-    max-width: 700px;
   }
   .chip-logo {
     display: flex;
@@ -489,16 +489,24 @@ const rightVine = makeVine(
     gap: 7px;
     background: rgba(243, 248, 238, 0.96);
     border-radius: var(--radius-pill);
-    padding: 7px 14px;
+    padding: 8px 12px;
     color: var(--fern);
     font-weight: 600;
-    font-size: 12.5px;
+    font-size: 13px;
     white-space: nowrap;
   }
   .chip-logo img {
-    height: 14px;
+    height: 17px;
     width: auto;
     border-radius: 3px;
+  }
+  /* Wide screens: keep the strip on one line; it may run a few px past the
+     text rail into the empty margin, which reads fine. */
+  @media (min-width: 1240px) {
+    .proof ul {
+      flex-wrap: nowrap;
+      width: max-content;
+    }
   }
   @keyframes rise {
     from { opacity: 0; transform: translateY(14px); }

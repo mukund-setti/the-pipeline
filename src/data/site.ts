@@ -74,7 +74,7 @@ export const placements: Placement[] = [
   { org: 'Uber', role: 'Internship', mark: 'U', logo: '/img/logos/uber.webp' },
   { org: 'CrowdStrike', role: 'Internship', mark: 'CS', logo: '/img/logos/crowdstrike.webp' },
   { org: 'Wells Fargo', role: 'Internship', mark: 'WF', logo: '/img/logos/wells-fargo.webp' },
-  { org: 'IBM', role: 'Internship', mark: 'IBM', logo: '/img/logos/ibm.webp' },
+  { org: 'IBM', role: 'Internship', mark: 'IBM', logo: '/img/logos/ibm-blue.webp' },
   { org: 'Oracle', role: 'Internship', mark: 'O', logo: '/img/logos/oracle.webp' },
 ];
 
