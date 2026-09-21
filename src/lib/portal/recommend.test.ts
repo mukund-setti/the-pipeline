@@ -16,6 +16,7 @@ import {
   conceptCounts,
   cosine,
   DEMO_RESUME_TEXT,
+  deriveTags,
   gradYear,
   recommend,
 } from './recommend.ts';
@@ -101,6 +102,15 @@ test('gradYear trusts years next to graduation language only', () => {
 test('an unreadable resume yields no profile rather than a confident guess', () => {
   assert.equal(buildProfile('Jane Doe  555-0100  jane@example.com', NOW), null);
   assert.equal(buildProfile('', NOW), null);
+});
+
+test('deriveTags reads tags out of a posting title', () => {
+  assert.deepEqual(deriveTags('Machine Learning Intern', null), ['ai-ml']);
+  assert.deepEqual(deriveTags('Frontend Engineer Intern', 'Remote'), ['frontend', 'remote']);
+  assert.deepEqual(deriveTags('Embedded Software Intern', 'Austin, TX'), ['embedded']);
+  assert.deepEqual(deriveTags('Software Engineer Intern', 'Seattle, WA'), ['swe']);
+  // A title with no skill in it stays empty rather than inventing one.
+  assert.deepEqual(deriveTags('Summer Intern', 'New York, NY'), []);
 });
 
 /* ------------------------------ eval ---------------------------------- */

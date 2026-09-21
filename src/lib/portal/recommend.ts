@@ -137,6 +137,18 @@ export function conceptCounts(text: string): Vec {
   return counts;
 }
 
+/**
+ * Tags implied by a posting's own words, used by the scanner to fill in rows
+ * that arrive untagged (Simplify's boards give only a title, company and
+ * location). Lives here so the tags the scanner writes and the concepts the
+ * ranker reads can never drift apart.
+ */
+export function deriveTags(title: string, location: string | null): string[] {
+  const tags = Object.keys(conceptCounts(`${title} ${location ?? ''}`));
+  if (/\bremote\b/i.test(location ?? '')) tags.push('remote');
+  return tags;
+}
+
 /** The text an opportunity is judged on, and its tag-asserted concepts. */
 function opportunityCounts(o: Opportunity): Vec {
   const counts = conceptCounts(`${o.title} ${o.tags.join(' ')}`);
