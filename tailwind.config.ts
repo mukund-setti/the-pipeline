@@ -21,29 +21,29 @@ export default {
         },
         gold: {
           DEFAULT: '#6FCF6A', // spring accent on dark (links, marks)
-          deep: '#256B3C', // pine that passes contrast on light
+          deep: '#6FCF6A', // bright accent that reads on dark
           bright: '#6FCF6A', // primary button fill (spring)
           pale: '#8CDD88', // gradient light end / button hover
         },
         // ── Legacy-named roles, retoned (low-touch aliases) ──
-        bg: '#F3F8EE', // snowdrop (reading sections)
-        surface: '#FCFEF9', // cards, lifted panels, header bar
+        bg: '#0F1411', // near-black green (dark experiment)
+        surface: '#171E19', // dark cards, panels, header bar
         ink: {
-          DEFAULT: '#1B3526', // dark grove ink: primary text on light
-          2: '#1B4E37', // = canopy.2 (grove)
-          soft: '#4E6B54', // muted moss body text (AA on snowdrop)
+          DEFAULT: '#E8F1E6', // light ink on the dark ground
+          2: '#DFEEDD', // bright ink for emphasis on dark
+          soft: '#9DB4A0', // muted sage body text on dark
         },
         line: {
-          DEFAULT: '#DCE7D6', // soft hairlines on snowdrop
-          strong: '#A9C0A6', // hover border on snowdrop
+          DEFAULT: 'rgba(223,238,221,0.14)', // hairlines on dark
+          strong: 'rgba(223,238,221,0.3)', // hover border on dark
           dark: 'rgba(223,238,221,0.16)', // hairlines on grove
         },
         brand: {
           DEFAULT: '#256B3C', // pine: secondary fills, chips
           deep: '#1D5530', // hover pine
-          soft: '#E3EFDD', // spring tint fills, callout bg
+          soft: '#1C2B20', // dark tint fills, callout bg
         },
-        signal: '#256B3C', // = gold.deep (arrival marks on light surfaces)
+        signal: '#6FCF6A', // = gold.deep (arrival marks)
         ondark: {
           DEFAULT: '#F3F8EE', // snowdrop text on grove
           soft: '#C4DAC4', // muted sage text on grove
@@ -51,7 +51,7 @@ export default {
         },
       },
       fontFamily: {
-        display: ['"Young Serif"', 'Georgia', 'ui-serif', 'serif'],
+        display: ['Fraunces', 'Georgia', 'ui-serif', 'serif'],
         sans: ['"Instrument Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         mono: ['"Instrument Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },

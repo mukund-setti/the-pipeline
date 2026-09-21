@@ -13,7 +13,7 @@ export const site = {
   title: 'The Pipeline',
   location: 'University of California',
   established: '2026',
-  themeColor: '#F3F8EE', // keep in sync with surface in tailwind.config.ts (a <meta> needs a literal)
+  themeColor: '#0F1411', // keep in sync with surface in tailwind.config.ts (a <meta> needs a literal)
   /** Default meta description (homepage + OG fallback). */
   description:
     'A fellow-run community across the UC system moving underrepresented undergrads in tech into the rooms they were kept out of, through gatekept job drops, resume reviews, and mock interviews run by people who have already landed.',
@@ -71,7 +71,6 @@ export const placements: Placement[] = [
   { org: 'American Express', role: 'Internship', mark: 'AX', logo: '/img/logos/american-express.webp' },
   { org: 'Amazon', role: 'Full-Time Offer', mark: 'a', logo: '/img/logos/amazon.webp' },
   // TODO: confirm roles below with the founder.
-  { org: 'Uber', role: 'Internship', mark: 'U', logo: '/img/logos/uber.webp' },
   { org: 'CrowdStrike', role: 'Internship', mark: 'CS', logo: '/img/logos/crowdstrike.webp' },
   { org: 'Wells Fargo', role: 'Internship', mark: 'WF', logo: '/img/logos/wells-fargo.webp' },
   { org: 'IBM', role: 'Internship', mark: 'IBM', logo: '/img/logos/ibm-blue.webp' },

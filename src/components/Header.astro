@@ -14,16 +14,16 @@ const isActive = (href: string) => {
     shrink-to-fit width (left:50% centering makes links wrap mid-width). */}
 <header class="pointer-events-none fixed inset-x-0 top-[22px] z-50 flex justify-center px-4">
   <nav
-    class="pointer-events-auto flex max-w-full items-center gap-1.5 rounded-pill bg-surface py-2 pl-4 pr-2.5 shadow-[0_10px_30px_rgba(28,74,18,0.28)]"
+    class="pointer-events-auto flex max-w-full items-center gap-1.5 rounded-pill bg-surface py-2 pl-4 pr-2.5 shadow-[0_10px_30px_rgba(10,26,17,0.3)]"
     aria-label="Primary"
   >
     <a
       href="/"
-      class="mr-2 inline-flex items-center gap-2 whitespace-nowrap font-display text-[17px] font-bold tracking-tight text-gold-deep"
-      aria-label="The Pipeline, home"
+      class="mr-3 inline-flex items-center gap-2.5 whitespace-nowrap font-display text-[25px] font-semibold tracking-tight text-gold-deep"
+      aria-label="Pipeline, home"
     >
-      <Mark size={24} />
-      The Pipeline
+      <Mark size={37} />
+      Pipeline
     </a>
 
     <div class="flex items-center gap-0.5 max-[680px]:hidden">
@@ -45,7 +45,7 @@ const isActive = (href: string) => {
 
     <a
       href={navCta.href}
-      class="ml-1 rounded-pill bg-gold px-[18px] py-[9px] text-[14.5px] font-bold text-ink-2 transition-colors hover:bg-gold-bright hover:text-white"
+      class="ml-1 rounded-pill bg-gold px-[18px] py-[9px] text-[14.5px] font-bold text-ink-2 transition-colors hover:bg-gold-pale"
       aria-current={isActive(navCta.href) ? 'page' : undefined}
     >
       {navCta.label}

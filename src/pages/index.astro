@@ -4,8 +4,9 @@ import { site, hero, stages, stats, footer, placements } from '../data/site';
 
 // Fonts come from Layout (Fraunces + Instrument Sans, self-hosted).
 
-/** The seed-to-tree scroll story: grows behind the content as you scroll. */
-const SHOW_PLANT = true;
+/** The seed-to-tree scroll story: grows behind the content as you scroll.
+ *  Temporarily off; flip to true to bring it back. */
+const SHOW_PLANT = false;
 
 /* ── Edge vines, generated ──────────────────────────────────────────
    The trunks are cubic Bezier chains; sprig positions are EVALUATED on
@@ -130,10 +131,10 @@ const rightVine = makeVine(
         <path id="leaflet" d="M0 0 C5 -6 13 -8 19 -4 C21 -2 21 -1 19 1 C13 4 5 3 0 0 Z"/>
         <g id="sprig">
           <path d="M0 0 C9 1 18 4 26 10" fill="none" stroke="#4FA55B" stroke-width="2.5" stroke-linecap="round"/>
-          <g transform="translate(8 1) rotate(-52) scale(0.75)"><use href="#leaflet" fill="#2F7D47"/></g>
+          <g transform="translate(8 1) rotate(-52) scale(0.75)"><use href="#leaflet" fill="#3F9855"/></g>
           <g transform="translate(8 1) rotate(58) scale(0.7)"><use href="#leaflet" fill="#6FCF6A"/></g>
           <g transform="translate(17 4) rotate(-38) scale(0.9)"><use href="#leaflet" fill="#6FCF6A"/></g>
-          <g transform="translate(17 4) rotate(46) scale(0.85)"><use href="#leaflet" fill="#2F7D47"/></g>
+          <g transform="translate(17 4) rotate(46) scale(0.85)"><use href="#leaflet" fill="#3F9855"/></g>
           <g transform="translate(26 10) rotate(10)"><use href="#leaflet" fill="#6FCF6A"/></g>
         </g>
         {/* Five-petal white blossom for the tree finale. Centered on origin. */}
@@ -536,8 +537,8 @@ const rightVine = makeVine(
   /* ---------- scroll zone with growing roots ---------- */
   .grow {
     position: relative;
-    background: var(--cream);
-    color: var(--fern);
+    background: #0f1411;
+    color: #e8f1e6;
   }
   .roots {
     position: absolute;
@@ -562,7 +563,7 @@ const rightVine = makeVine(
     stroke-dashoffset: 1;
     transition: stroke-dashoffset 0.2s linear;
   }
-  .trace-draw.trunk { stroke: var(--sprout); stroke-width: 5; }
+  .trace-draw.trunk { stroke: var(--lime); stroke-width: 5; }
   .root-dot {
     fill: none;
     stroke: var(--sprout);
@@ -587,7 +588,7 @@ const rightVine = makeVine(
     font-weight: 600;
     font-size: clamp(27px, 4vw, 40px);
     letter-spacing: -0.01em;
-    color: var(--fern);
+    color: #e8f1e6;
     text-align: center;
     margin: 0;
   }
@@ -601,8 +602,8 @@ const rightVine = makeVine(
     margin-top: 48px;
   }
   .card {
-    background: #fff;
-    border: 1px solid rgba(20, 61, 43, 0.12);
+    background: #171e19;
+    border: 1px solid rgba(223, 238, 221, 0.14);
     border-radius: 16px;
     padding: 28px 26px;
     box-shadow: 0 8px 22px rgba(10, 26, 17, 0.05);
@@ -613,20 +614,20 @@ const rightVine = makeVine(
     font-size: 14px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--sprout-deep);
+    color: var(--lime);
   }
   .card h3 {
     font-family: 'Fraunces', Georgia, serif;
     font-weight: 600;
     font-size: 21px;
-    color: var(--fern);
+    color: #e8f1e6;
     margin: 10px 0 8px;
   }
   .card p {
     font-weight: 500;
     font-size: 15.5px;
     line-height: 1.55;
-    color: rgba(20, 61, 43, 0.78);
+    color: rgba(223, 238, 221, 0.75);
     margin: 0;
   }
 
@@ -645,10 +646,10 @@ const rightVine = makeVine(
     font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
     font-weight: 700;
     font-size: clamp(30px, 3.4vw, 40px);
-    color: var(--sprout);
+    color: var(--lime);
     line-height: 1;
   }
-  .cap { font-weight: 600; font-size: 14px; color: rgba(20, 61, 43, 0.72); }
+  .cap { font-weight: 600; font-size: 14px; color: rgba(223, 238, 221, 0.65); }
 
   /* join CTA */
   .cta { padding-bottom: 46px; }
@@ -673,7 +674,7 @@ const rightVine = makeVine(
     text-align: center;
     font-weight: 600;
     font-size: 13px;
-    color: rgba(20, 61, 43, 0.6);
+    color: rgba(223, 238, 221, 0.55);
     margin: 34px 0 0;
   }
 

@@ -44,11 +44,11 @@
   flex-direction: column;
   overflow-y: auto;
   background:
-    radial-gradient(120% 60% at 50% 0%, rgba(166, 225, 122, 0.08), transparent 60%),
+    radial-gradient(120% 60% at 50% 0%, rgba(111, 207, 106, 0.08), transparent 60%),
     theme(colors.canopy.DEFAULT);
   border-right: 1px solid theme(colors.line.dark);
   scrollbar-width: thin;
-  scrollbar-color: rgba(242, 251, 234, 0.18) transparent;
+  scrollbar-color: rgba(243, 248, 238, 0.18) transparent;
 }
 
 .portal-main {
@@ -78,7 +78,7 @@
   gap: 12px;
   padding: 14px 16px;
   border-radius: theme(borderRadius.card);
-  background: rgba(242, 251, 234, 0.05);
+  background: rgba(243, 248, 238, 0.05);
   border: 1px solid theme(colors.line.dark);
 }
 
@@ -113,18 +113,18 @@
 }
 .portal-nav-item:hover {
   color: theme(colors.ondark.DEFAULT);
-  background: rgba(242, 251, 234, 0.07);
+  background: rgba(243, 248, 238, 0.07);
 }
 .portal-nav-item[aria-current='page'] {
   color: theme(colors.ondark.DEFAULT);
-  background: rgba(242, 251, 234, 0.1);
+  background: rgba(243, 248, 238, 0.1);
   box-shadow: inset 3px 0 0 0 var(--school-accent);
 }
 .portal-nav-item[aria-current='page'] .portal-hash {
   color: var(--school-gold);
 }
 .portal-hash {
-  color: rgba(242, 251, 234, 0.4);
+  color: rgba(243, 248, 238, 0.4);
   font-weight: 600;
 }
 
@@ -134,7 +134,7 @@
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(242, 251, 234, 0.45);
+  color: rgba(243, 248, 238, 0.45);
   padding: 0 12px;
 }
 
@@ -218,7 +218,7 @@
   transition: border-color 0.15s ease;
 }
 .portal-input::placeholder {
-  color: rgba(88, 122, 74, 0.6);
+  color: rgba(78, 107, 84, 0.6);
 }
 .portal-input:focus {
   border-color: var(--school-accent);
@@ -309,7 +309,7 @@
     z-index: 50;
     transform: translateX(-100%);
     transition: transform 0.22s ease;
-    box-shadow: 24px 0 60px rgba(23, 56, 14, 0.35);
+    box-shadow: 24px 0 60px rgba(10, 26, 17, 0.35);
   }
   .portal-shell[data-menu-open] .portal-rail { transform: translateX(0); }
   .portal-menu-btn {
@@ -328,7 +328,7 @@
     position: fixed;
     inset: 0;
     z-index: 40;
-    background: rgba(23, 56, 14, 0.45);
+    background: rgba(10, 26, 17, 0.45);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s ease;

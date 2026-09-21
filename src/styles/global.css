@@ -63,13 +63,6 @@
 }
 
 @layer components {
-  /* Young Serif ships a single 400 weight; pin it so font-semibold/bold on
-     display headings doesn't trigger ugly synthesized bolding. */
-  .font-display {
-    font-weight: 400 !important;
-    font-synthesis-weight: none;
-  }
-
   /* Centered content rail. */
   .wrap {
     @apply mx-auto w-full max-w-site px-6;
