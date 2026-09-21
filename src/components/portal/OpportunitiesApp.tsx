@@ -267,17 +267,20 @@ export default function OpportunitiesApp({ school }: { school: string }) {
     const store = storeRef.current;
     if (!store) return;
     setRecState('loading');
-    if (!store.live) {
-      setProfile(buildProfile(DEMO_RESUME_TEXT));
-      setUsingSample(true);
-      setRecState('ready');
-      return;
-    }
     const fresh = await store.getResume().catch(() => null);
     if (!fresh?.url) {
+      // A demo session with no resume of its own still has something to rank
+      // against, so the feature can be seen without signing in.
+      if (!store.live) {
+        setProfile(buildProfile(DEMO_RESUME_TEXT));
+        setUsingSample(true);
+        setRecState('ready');
+        return;
+      }
       setRecState('no-resume');
       return;
     }
+    setUsingSample(false);
     const result = await extractResumeText(fresh.url, fresh.name);
     if (!result.ok) {
       setRecState(result.reason);
@@ -294,7 +297,9 @@ export default function OpportunitiesApp({ school }: { school: string }) {
     // "For you" already excludes applied roles, so it cannot combine with the
     // saved/applied views; switching it on clears them.
     if (next) setActionFilter(null);
-    if (next && (recState === 'idle' || recState === 'no-resume')) loadProfile();
+    // Reload on every open except a ready one: the member may have uploaded or
+    // replaced a resume on the Home tab since the last attempt.
+    if (next && recState !== 'ready') loadProfile();
   };
 
   const askAi = async () => {

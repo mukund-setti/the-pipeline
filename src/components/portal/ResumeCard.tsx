@@ -117,7 +117,7 @@ export default function ResumeCard({ school }: { school: string }) {
   const demoNote =
     store && !store.live ? (
       <p className="mt-2 text-[0.75rem] text-ink-soft/80">
-        (demo session: the file itself is not stored)
+        (demo session: this file stays in this browser and is never uploaded)
       </p>
     ) : null;
 

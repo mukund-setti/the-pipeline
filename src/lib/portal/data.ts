@@ -536,6 +536,58 @@ function uid(): string {
   return 'demo-' + Math.random().toString(36).slice(2, 10);
 }
 
+/* ---------------------- demo resume file storage ------------------------ */
+
+/**
+ * The demo session keeps its data in localStorage, which cannot hold a 5 MB
+ * PDF, so the resume file goes to IndexedDB instead. Storing the real bytes is
+ * what lets a demo session rank "For you" against the member's own resume
+ * rather than the built-in sample. Browser-local and never uploaded.
+ */
+const DEMO_FILE_DB = 'pipeline-portal-demo-files';
+const DEMO_FILE_STORE = 'resume';
+const DEMO_FILE_KEY = 'current';
+
+function demoFileDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DEMO_FILE_DB, 1);
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains(DEMO_FILE_STORE)) {
+        req.result.createObjectStore(DEMO_FILE_STORE);
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function demoFileTx<T>(mode: IDBTransactionMode, run: (s: IDBObjectStore) => IDBRequest<T>) {
+  return demoFileDb().then(
+    (db) =>
+      new Promise<T>((resolve, reject) => {
+        const req = run(db.transaction(DEMO_FILE_STORE, mode).objectStore(DEMO_FILE_STORE));
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      })
+  );
+}
+
+/** Object URLs are revoked on replacement so a long session does not leak. */
+let demoResumeUrl: string | null = null;
+
+async function readDemoResumeUrl(): Promise<string | null> {
+  try {
+    const blob = await demoFileTx<Blob | undefined>('readonly', (s) => s.get(DEMO_FILE_KEY));
+    if (!blob) return null;
+    if (demoResumeUrl) URL.revokeObjectURL(demoResumeUrl);
+    demoResumeUrl = URL.createObjectURL(blob);
+    return demoResumeUrl;
+  } catch {
+    // Private windows and blocked storage: fall back to metadata only.
+    return null;
+  }
+}
+
 const minsAgo = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
 
 class DemoStore implements PortalStore {
@@ -661,19 +713,38 @@ class DemoStore implements PortalStore {
 
   async getResume(): Promise<ResumeInfo | null> {
     const r = this.data.resume;
-    return r ? { ...r, url: null } : null;
+    if (!r) return null;
+    return { ...r, url: await readDemoResumeUrl() };
   }
 
   async uploadResume(file: File): Promise<ResumeInfo> {
+    // Same guards as the live store, so the demo rejects what production would.
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (!['pdf', 'doc', 'docx'].includes(ext)) throw new Error('Use a PDF or Word file.');
+    if (file.size > 5 * 1024 * 1024) throw new Error('Keep it under 5 MB.');
     const info = { name: file.name, updatedAt: new Date().toISOString() };
     this.data.resume = info;
     this.save(this.data);
-    return { ...info, url: null };
+    try {
+      await demoFileTx('readwrite', (s) => s.put(file, DEMO_FILE_KEY));
+    } catch {
+      // Metadata still saved; "For you" falls back to the sample resume.
+    }
+    return { ...info, url: await readDemoResumeUrl() };
   }
 
   async removeResume(): Promise<void> {
     this.data.resume = null;
     this.save(this.data);
+    if (demoResumeUrl) {
+      URL.revokeObjectURL(demoResumeUrl);
+      demoResumeUrl = null;
+    }
+    try {
+      await demoFileTx('readwrite', (s) => s.delete(DEMO_FILE_KEY));
+    } catch {
+      /* nothing stored */
+    }
   }
 
   async listActions(): Promise<JobActionMap> {
