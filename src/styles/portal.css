@@ -260,8 +260,8 @@
   cursor: pointer;
 }
 .portal-btn-ghost:hover {
-  border-color: var(--school-deep);
-  background: var(--school-soft);
+  border-color: var(--school-accent);
+  background: color-mix(in srgb, var(--school-accent) 15%, transparent);
 }
 
 /* Setup / sample-data notice band. Author display:flex would defeat the
