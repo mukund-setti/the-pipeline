@@ -8,9 +8,9 @@
  */
 
 export const site = {
-  name: 'The Pipeline',
+  name: 'Pipeline',
   /** Used as the homepage <title> suffix and brand wordmark. */
-  title: 'The Pipeline',
+  title: 'Pipeline',
   location: 'University of California',
   established: '2026',
   themeColor: '#0F1411', // keep in sync with surface in tailwind.config.ts (a <meta> needs a literal)
@@ -34,7 +34,7 @@ export const navCta = { label: 'Join', href: '/join/' } as const;
 /** Home hero strings. Undergrad identity up top, a success proof point below. */
 export const hero = {
   eyebrow: 'UC system · Undergrad fellowship · Est. 2026',
-  proof: '65% of fellows land an internship',
+  proof: 'Fellows have landed at Capital One, Amazon, IBM, and more',
 } as const;
 
 /**
@@ -89,8 +89,7 @@ export type Stat = { num: string; cap: string; win?: boolean };
 
 export const stats: Stat[] = [
   { num: '50+', cap: 'Undergrad fellows' },
-  { num: '5+', cap: 'Universities' },
-  { num: '65%', cap: 'Landed an internship', win: true },
+  { num: '3', cap: 'Universities' },
   { num: '$0', cap: 'To join' },
   { num: '100%', cap: 'Fellow-led' },
 ];
@@ -242,5 +241,5 @@ export const voice = {
 
 export const footer = {
   builtBy: 'Built and run by fellows · Across the UC system',
-  copyright: '© 2026 The Pipeline',
+  copyright: '© 2026 Pipeline',
 } as const;
