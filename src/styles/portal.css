@@ -362,40 +362,10 @@
 
 .trk-row-main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1.2fr) minmax(290px, 1.3fr) 128px auto;
   align-items: center;
   gap: 18px;
-  cursor: pointer;
 }
-
-/* One-word stage (or outcome) badge on the collapsed row. */
-.trk-stage {
-  display: inline-block;
-  border-radius: 999px;
-  padding: 3px 10px;
-  font: 600 0.74rem/1.3 theme(fontFamily.sans);
-  background: color-mix(in srgb, var(--school-accent) 18%, transparent);
-  color: theme(colors.ink.DEFAULT);
-}
-.trk-stage[data-outcome='rejected'],
-.trk-stage[data-outcome='withdrawn'] {
-  background: theme(colors.brand.soft);
-  color: theme(colors.ink.soft);
-}
-.trk-stage[data-outcome='accepted'] {
-  background: rgba(111, 207, 106, 0.16);
-  color: theme(colors.gold.DEFAULT);
-}
-
-/* Drawer head: the stage rail, then the posting facts and outcome. */
-.trk-drawer-top {
-  display: grid;
-  gap: 14px;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid theme(colors.line.DEFAULT);
-}
-.trk-drawer-top .trk-rail { max-width: 520px; }
 
 /* The stage rail: the control for "where am I in the process". */
 .trk-rail { display: flex; align-items: flex-start; }
@@ -471,9 +441,10 @@
   box-shadow: 0 0 0 4px rgba(111, 207, 106, 0.25);
 }
 
-.trk-when { display: flex; align-items: center; gap: 10px; }
+.trk-when { text-align: right; line-height: 1.35; }
 .trk-nudge { color: var(--school-gold); font-weight: 600; }
 
+.trk-side { display: flex; align-items: center; gap: 8px; }
 .trk-outcome {
   appearance: none;
   border-radius: 999px;
@@ -674,8 +645,13 @@
 }
 .trk-toast[data-show] { opacity: 1; transform: translate(-50%, 0); }
 
+@media (max-width: 1099px) {
+  .trk-row-main { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .trk-rail { grid-column: 1 / -1; order: 3; }
+}
 @media (max-width: 639px) {
-  .trk-row-main { grid-template-columns: minmax(0, 1fr) auto; gap: 10px 12px; }
-  .trk-when { order: 3; grid-column: 1 / -1; }
+  .trk-row-main { grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
+  .trk-when { text-align: left; order: 2; }
+  .trk-side { order: 2; }
   .trk-detail { grid-template-columns: minmax(0, 1fr); }
 }

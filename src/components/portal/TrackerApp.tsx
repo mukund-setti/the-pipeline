@@ -46,8 +46,6 @@ const OUTCOMES: [AppOutcome, string][] = [
   ['accepted', 'Accepted'],
 ];
 const FOLLOW_UP_DAYS = 10;
-/** Search and sort appear once the list is longer than this. */
-const SEARCH_AFTER = 5;
 
 type Filter = 'all' | AppStage | 'closed';
 type Sort = 'applied-desc' | 'applied-asc' | 'updated-desc' | 'company-asc';
@@ -172,6 +170,7 @@ export default function TrackerApp({ school }: { school: string }) {
   const [apps, setApps] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [live, setLive] = useState(true);
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<Sort>('applied-desc');
@@ -206,6 +205,7 @@ export default function TrackerApp({ school }: { school: string }) {
         window.dispatchEvent(new CustomEvent('portal:notice'));
       }
       storeRef.current = portal.store;
+      setLive(portal.store.live);
       try {
         const rows = await portal.store.listApplications();
         if (!cancelled) setApps(rows);
@@ -560,12 +560,31 @@ export default function TrackerApp({ school }: { school: string }) {
   return (
     <div className="mx-auto w-full max-w-[1060px] px-5 py-8 sm:px-7">
       {/* Header */}
-      <h2 className="mb-4 font-display text-[1.35rem] font-semibold tracking-tight text-ink">
-        Your applications
-      </h2>
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="font-display text-[1.35rem] font-semibold tracking-tight text-ink">
+            Your applications
+          </h2>
+          <p className="mt-1 max-w-[60ch] text-[0.92rem] leading-relaxed text-ink-soft">
+            Paste a posting link and track where you are in the process. Only you can see this
+            list.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="portal-btn-ghost disabled:cursor-default disabled:opacity-50"
+          onClick={exportCsv}
+          disabled={!apps.length}
+        >
+          Export CSV
+        </button>
+      </div>
 
       {/* Intake */}
-      <form className="portal-card mb-5 p-3 sm:p-4" onSubmit={submitIntake} autoComplete="off">
+      <form className="portal-card mb-5 p-4 sm:p-5" onSubmit={submitIntake} autoComplete="off">
+        <label htmlFor="trk-url" className="mb-2 block text-[0.8rem] font-semibold text-ink">
+          Paste a job link
+        </label>
         <div className="flex flex-col gap-2 sm:flex-row">
           <input
             id="trk-url"
@@ -573,9 +592,7 @@ export default function TrackerApp({ school }: { school: string }) {
             inputMode="url"
             spellCheck={false}
             className="portal-input"
-            aria-label="Job link"
-            title="Use the job page on the company's own careers site, not LinkedIn or Simplify"
-            placeholder="Paste a job link to track it"
+            placeholder="https://jobs.lever.co/company/…"
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
           />
@@ -583,15 +600,21 @@ export default function TrackerApp({ school }: { school: string }) {
             Track it
           </button>
         </div>
-        {urlError && (
-          <p className="mt-2 text-[0.8rem] font-semibold text-[color:var(--school-gold)]">{urlError}</p>
-        )}
+        <p
+          className={
+            'mt-2 text-[0.8rem] ' + (urlError ? 'font-semibold text-[color:var(--school-gold)]' : 'text-ink-soft')
+          }
+        >
+          {urlError ||
+            (live || import.meta.env.DEV
+              ? "Use the original job page on the company's careers site (Workday, Greenhouse, Lever and so on), not a Simplify, LinkedIn or Handshake link. The details fill in from it."
+              : 'Demo session: links are not read automatically here, so fill in the details by hand.')}
+        </p>
       </form>
 
-      {/* Stage filters: only stages in use, so a short list stays quiet */}
-      {apps.length > 0 && (
+      {/* Stage filters */}
       <div className="mb-3 flex flex-wrap gap-1.5" role="group" aria-label="Filter by stage">
-        {chips.filter(([k]) => k === 'all' || k === filter || counts[k]).map(([k, label]) => {
+        {chips.map(([k, label]) => {
           const active = filter === k;
           return (
             <button
@@ -619,10 +642,8 @@ export default function TrackerApp({ school }: { school: string }) {
           );
         })}
       </div>
-      )}
 
-      {/* Search + sort: only worth the space once the list is long */}
-      {apps.length > SEARCH_AFTER && (
+      {/* Search + sort */}
       <div className="mb-4 flex flex-col gap-2 sm:flex-row">
         <input
           type="search"
@@ -646,7 +667,6 @@ export default function TrackerApp({ school }: { school: string }) {
           </select>
         </div>
       </div>
-      )}
 
       {/* List */}
       {loading ? (
@@ -665,11 +685,11 @@ export default function TrackerApp({ school }: { school: string }) {
         <div className="portal-card flex flex-col items-center gap-2 px-6 py-12 text-center">
           <span className="font-display text-[1.05rem] font-semibold text-ink">Nothing tracked yet</span>
           <span className="max-w-[42ch] text-[0.85rem] text-ink-soft">
-            Paste a link above, or mark a role applied in{' '}
+            Paste a job link above to add your first application. Roles from the{' '}
             <a href={`/portal/${school}/opportunities/`} className="font-semibold text-ink hover:underline">
               Opportunities
-            </a>
-            .
+            </a>{' '}
+            feed work too.
           </span>
         </div>
       ) : !visible.length ? (
@@ -709,14 +729,6 @@ export default function TrackerApp({ school }: { school: string }) {
             />
           ))}
         </ul>
-      )}
-
-      {apps.length > 0 && (
-        <div className="mt-4 flex justify-end">
-          <button type="button" className="trk-link" onClick={exportCsv}>
-            Export CSV
-          </button>
-        </div>
       )}
 
       {/* Editor dialog */}
@@ -877,99 +889,100 @@ function AppRow(p: RowProps) {
       data-outcome={a.outcome || undefined}
       data-flash={p.flash ? '' : undefined}
     >
-      {/* Summary: who, where you are, how long. The whole row opens the drawer. */}
-      <div className="trk-row-main" onClick={p.onToggle}>
+      <div className="trk-row-main">
         <div className="min-w-0">
           <div className="truncate font-semibold text-ink">
             {a.company || <span className="italic text-ink-soft">Unknown company</span>}
           </div>
-          <div className="truncate text-[0.9rem] text-ink-soft">
-            {a.title || <span className="italic">Untitled role</span>}
+          <div className="font-display text-[1.02rem] leading-snug text-ink">
+            {a.title || <span className="italic text-ink-soft">Untitled role</span>}
           </div>
-        </div>
-
-        <div className="trk-when">
-          <span className="trk-stage" data-outcome={a.outcome || undefined}>
-            {a.outcome ? LABELS[a.outcome] : LABELS[a.stage]}
-          </span>
-          <span className={'text-[0.76rem] ' + (nudge ? 'trk-nudge' : 'text-ink-soft')}>
-            {nudge ? `No word in ${days}d` : a.appliedAt ? ago(days) : 'not applied'}
-          </span>
-        </div>
-
-        <button
-          type="button"
-          className="trk-more"
-          aria-expanded={p.open}
-          onClick={(e) => {
-            e.stopPropagation();
-            p.onToggle();
-          }}
-        >
-          {p.open ? 'Hide' : 'Notes & prep'}
-          <svg
-            className="h-3.5 w-3.5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </button>
-      </div>
-
-      {p.open && (
-        <>
-        <div className="trk-drawer-top">
-          <div className="trk-rail" role="group" aria-label="Stage">
-            {STAGES.map(([k, label], i) => (
-              <button
-                key={k}
-                type="button"
-                className="trk-node"
-                data-done={i < idx ? '' : undefined}
-                data-current={i === idx ? '' : undefined}
-                aria-pressed={i === idx}
-                title={`Move to ${label}`}
-                onClick={() => p.onStage(k)}
-              >
-                <span className="trk-dot" />
-                <span className="trk-lbl">{label}</span>
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[0.8rem] text-ink-soft">
-            {a.appliedAt && <span>Applied {fmtDay(a.appliedAt)}</span>}
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[0.78rem] text-ink-soft">
             {meta.map((m, i) => (
-              <span key={i}>{m}</span>
+              <span key={i} className="flex items-center gap-2">
+                {m}
+                <span aria-hidden="true">·</span>
+              </span>
             ))}
             <a
               href={a.url}
               target="_blank"
               rel="noopener noreferrer"
               className="font-semibold text-ink hover:underline"
+              title="Open the posting"
             >
               {a.host || 'posting'} ↗
             </a>
-            <select
-              className="trk-outcome ml-auto"
-              data-outcome={a.outcome || 'open'}
-              aria-label="Outcome"
-              value={a.outcome}
-              onChange={(e) => p.onOutcome(e.target.value as AppOutcome)}
-            >
-              {OUTCOMES.map(([k, l]) => (
-                <option key={k} value={k}>
-                  {l}
-                </option>
-              ))}
-            </select>
           </div>
         </div>
+
+        <div className="trk-rail" role="group" aria-label="Stage">
+          {STAGES.map(([k, label], i) => (
+            <button
+              key={k}
+              type="button"
+              className="trk-node"
+              data-done={i < idx ? '' : undefined}
+              data-current={i === idx ? '' : undefined}
+              aria-pressed={i === idx}
+              title={`Move to ${label}`}
+              onClick={() => p.onStage(k)}
+            >
+              <span className="trk-dot" />
+              <span className="trk-lbl">{label}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="trk-when">
+          {a.appliedAt ? (
+            <>
+              <div className="text-[0.82rem] font-semibold text-ink">Applied {fmtDay(a.appliedAt)}</div>
+              <div className={'text-[0.74rem] ' + (nudge ? 'trk-nudge' : 'text-ink-soft')}>
+                {nudge ? `No word in ${days} days` : ago(days)}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-[0.82rem] font-semibold text-ink-soft">Not applied yet</div>
+              <div className="text-[0.74rem] text-ink-soft">saved {ago(daysSince(localDay(a.createdAt)))}</div>
+            </>
+          )}
+        </div>
+
+        <div className="trk-side">
+          <select
+            className="trk-outcome"
+            data-outcome={a.outcome || 'open'}
+            aria-label="Outcome"
+            value={a.outcome}
+            onChange={(e) => p.onOutcome(e.target.value as AppOutcome)}
+          >
+            {OUTCOMES.map(([k, l]) => (
+              <option key={k} value={k}>
+                {l}
+              </option>
+            ))}
+          </select>
+          <button type="button" className="trk-more" aria-expanded={p.open} onClick={p.onToggle}>
+            {p.open ? 'Hide details' : 'Notes & prep'}
+            <svg
+              className="h-3.5 w-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {p.open && (
         <div className="trk-detail">
           <div className="min-w-0">
             <label className="trk-label" htmlFor={`notes-${a.id}`}>
@@ -980,7 +993,7 @@ function AppRow(p: RowProps) {
               id={`notes-${a.id}`}
               className="portal-input min-h-[88px] resize-y text-[0.88rem]"
               defaultValue={a.notes}
-              placeholder="Recruiter, interview dates, what to prep"
+              placeholder="Recruiter name, interview dates, what to prepare. Saves when you click away."
               onBlur={(e) => p.onNotes(e.target.value)}
             />
 
@@ -1056,7 +1069,6 @@ function AppRow(p: RowProps) {
             </div>
           </div>
         </div>
-        </>
       )}
     </li>
   );
