@@ -585,7 +585,7 @@ export default function TrackerApp({ school }: { school: string }) {
         >
           {urlError ||
             (live || import.meta.env.DEV
-              ? 'Reads the title, company, location and pay from the page when it can. You can edit anything before saving.'
+              ? "Use the original job page on the company's careers site (Workday, Greenhouse, Lever and so on), not a Simplify, LinkedIn or Handshake link. The details fill in from it."
               : 'Demo session: links are not read automatically here, so fill in the details by hand.')}
         </p>
       </form>

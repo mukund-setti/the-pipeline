@@ -371,6 +371,15 @@ function cleanAppInput(input: ApplicationInput): ApplicationInput {
   return out;
 }
 
+/** Turn a raw Supabase error on the tracker table into something a member can act on. */
+function appError(error: { code?: string; message?: string }): Error {
+  // PGRST205 / 42P01: the applications table has not been created yet.
+  if (error.code === 'PGRST205' || error.code === '42P01' || /applications/.test(error.message || '') && /schema cache|does not exist/.test(error.message || '')) {
+    return new Error('The tracker is not set up in the database yet. Ask a portal admin to run supabase/schema.sql.');
+  }
+  return new Error(error.message || 'That did not save. Try again.');
+}
+
 function appToRow(input: ApplicationInput): Record<string, unknown> {
   const row: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(input) as [keyof ApplicationInput, unknown][]) {
@@ -597,7 +606,7 @@ class SupabaseStore implements PortalStore {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(1000);
-    if (error) throw error;
+    if (error) throw appError(error);
     return (data ?? []).map(appFromRow);
   }
 
@@ -609,7 +618,7 @@ class SupabaseStore implements PortalStore {
       .insert({ ...appToRow(clean), user_id: this.user.id })
       .select()
       .single();
-    if (error) throw error;
+    if (error) throw appError(error);
     return appFromRow(data);
   }
 
@@ -620,13 +629,13 @@ class SupabaseStore implements PortalStore {
       .eq('id', id)
       .select()
       .single();
-    if (error) throw error;
+    if (error) throw appError(error);
     return appFromRow(data);
   }
 
   async deleteApplication(id: string): Promise<void> {
     const { error } = await this.supa.from('applications').delete().eq('id', id);
-    if (error) throw error;
+    if (error) throw appError(error);
   }
 }
 

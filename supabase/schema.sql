@@ -563,3 +563,6 @@ drop policy if exists "applications: delete own" on public.applications;
 create policy "applications: delete own"
   on public.applications for delete to authenticated
   using (user_id = (select auth.uid()));
+
+-- Make the API see new tables immediately.
+notify pgrst, 'reload schema';

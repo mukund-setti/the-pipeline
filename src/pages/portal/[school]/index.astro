@@ -24,6 +24,12 @@ const quickNav = [
     body: 'The AI-tracked feed: internships, new grad roles, programs.',
   },
   {
+    href: `${base}/tracker/`,
+    icon: 'tracker',
+    title: 'Tracker',
+    body: 'Your private application list: stages, notes, and a prep sheet per role.',
+  },
+  {
     href: `${base}/forum/`,
     icon: 'forum',
     title: 'Forum',
@@ -58,7 +64,7 @@ const week = [
         Welcome back<span data-welcome-name></span>.
       </h2>
       <p class="mt-3 max-w-[54ch] text-ink-soft">
-        Your opportunity feed, the forum, and every chat room live here. Pick up where the
+        Your opportunity feed, your application tracker, the forum, and every chat room live here. Pick up where the
         community left off.
       </p>
     </section>
@@ -67,7 +73,7 @@ const week = [
     <ResumeCard client:only="react" school={school.slug} />
 
     {/* ── Quick nav ────────────────────────────────────────── */}
-    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {
         quickNav.map((item) => (
           <a
@@ -92,6 +98,14 @@ const week = [
                   </>
                 )}
                 {item.icon === 'forum' && <path d="M21 12a8 8 0 0 1-8 8H4l2.5-2.7A8 8 0 1 1 21 12z" />}
+                {item.icon === 'tracker' && (
+                  <>
+                    <path d="M3 12h18" />
+                    <circle cx="5" cy="12" r="2" />
+                    <circle cx="12" cy="12" r="2.5" />
+                    <circle cx="19" cy="12" r="2" />
+                  </>
+                )}
                 {item.icon === 'chat' && (
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 )}
@@ -167,7 +181,7 @@ const week = [
     <div
       class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line pt-5 text-[0.82rem] text-ink-soft"
     >
-      <span>The Pipeline member portal</span>
+      <span>Pipeline member portal</span>
       <span class="ml-auto flex flex-wrap items-center gap-x-6 gap-y-2">
         <a class="font-semibold text-ink underline-offset-4 hover:underline" href="/">pipelineco.org</a>
         <a class="font-semibold text-ink underline-offset-4 hover:underline" href="/join/">Discord gate</a>

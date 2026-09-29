@@ -25,7 +25,7 @@ import { channelsForSchool } from '../../lib/portal/types';
 
 interface Props {
   school: PortalSchool;
-  /** 'home' | 'opportunities' | 'forum' | 'chat' */
+  /** 'home' | 'opportunities' | 'tracker' | 'forum' | 'chat' */
   active: string;
   title: string;
 }
@@ -37,6 +37,7 @@ const base = `/portal/${school.slug}`;
 const navItems = [
   { key: 'home', label: 'Home', href: `${base}/`, icon: 'home' },
   { key: 'opportunities', label: 'Opportunities', href: `${base}/opportunities/`, icon: 'feed' },
+  { key: 'tracker', label: 'Tracker', href: `${base}/tracker/`, icon: 'tracker' },
   { key: 'forum', label: 'Forum', href: `${base}/forum/`, icon: 'forum' },
 ] as const;
 ---
@@ -46,10 +47,10 @@ const navItems = [
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{title} · {school.short} · The Pipeline</title>
+    <title>{title} · {school.short} · Pipeline</title>
     <meta name="robots" content="noindex, nofollow" />
     <meta name="theme-color" content="#143D2B" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" />
   </head>
   <body>
     <div class="portal-shell" data-shell>
@@ -100,6 +101,14 @@ const navItems = [
                       </>
                     )}
                     {item.icon === 'forum' && <path d="M21 12a8 8 0 0 1-8 8H4l2.5-2.7A8 8 0 1 1 21 12z" />}
+                    {item.icon === 'tracker' && (
+                      <>
+                        <path d="M3 12h18" />
+                        <circle cx="5" cy="12" r="2" />
+                        <circle cx="12" cy="12" r="2.5" />
+                        <circle cx="19" cy="12" r="2" />
+                      </>
+                    )}
                   </svg>
                   {item.label}
                 </a>

@@ -1,10 +1,10 @@
 /**
  * "Add to your tracker" pop-up, opened when a member marks an Opportunities
- * row as applied. It starts filled from the feed row (company, role,
- * location, link), reads the posting in the background to fill pay, work
- * mode and the prep sheet, and on save creates the member's tracker row at
- * the Applied stage. The caller then sets the applied mark, so the feed and
- * the tracker never disagree.
+ * row as applied. One idea: paste the link to the original job posting and
+ * the details fill themselves in. The link starts as the feed row's link and
+ * is read right away; pasting a different link reads that one instead. On
+ * save the role lands in the member's Tracker at the Applied stage, and the
+ * caller then sets the applied mark so the feed and the Tracker agree.
  */
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
@@ -19,24 +19,23 @@ type Form = {
   workMode: string;
   salary: string;
   appliedAt: string;
-  stage: string;
   notes: string;
 };
 
 type Status = { text: string; kind: '' | 'busy' | 'ok' | 'warn' };
 
-function formFrom(o: Opportunity): Form {
-  const loc = o.location ?? '';
-  return {
-    company: o.company,
-    title: o.title,
-    location: loc,
-    workMode: /remote/i.test(loc) ? 'Remote' : '',
-    salary: '',
-    appliedAt: today(),
-    stage: 'applied',
-    notes: '',
-  };
+/** Fields a successful read fills in (member notes and date are left alone). */
+const FILLED = ['company', 'title', 'location', 'workMode', 'salary'] as const;
+
+function normalizeLink(raw: string): string | null {
+  let v = raw.trim();
+  if (!v) return null;
+  if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
+  try {
+    return new URL(v).href;
+  } catch {
+    return null;
+  }
 }
 
 export default function TrackApplyDialog({
@@ -52,81 +51,99 @@ export default function TrackApplyDialog({
   onCancel: () => void;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const [link, setLink] = useState('');
   const [form, setForm] = useState<Form | null>(null);
   const [parsed, setParsed] = useState<ParsedPosting | null>(null);
   const [status, setStatus] = useState<Status>({ text: '', kind: '' });
   const [saving, setSaving] = useState(false);
-  /** Guards late parse results against a dialog that was closed or reopened. */
-  const openFor = useRef<string | null>(null);
+  /** The link most recently sent to the reader; late results for older links are dropped. */
+  const readingFor = useRef<string | null>(null);
+  const lastRead = useRef<string | null>(null);
+
+  /** Read a posting and fill the form from it. */
+  function read(raw: string) {
+    const url = normalizeLink(raw);
+    if (!url) {
+      setStatus({ text: 'That does not look like a link. Paste the full address of the job posting.', kind: 'warn' });
+      return;
+    }
+    if (url === lastRead.current) return;
+    lastRead.current = url;
+    readingFor.current = url;
+    setParsed(null);
+    setStatus({ text: 'Reading the job posting…', kind: 'busy' });
+    parsePosting(url)
+      .then((r) => {
+        if (readingFor.current !== url) return;
+        setParsed(r);
+        setForm((f) => {
+          if (!f) return f;
+          const next = { ...f };
+          for (const k of FILLED) if (r[k]) next[k] = r[k];
+          return next;
+        });
+        const gotBody = (r.description || '').length > 200;
+        setStatus(
+          gotBody && r.title
+            ? { text: 'Filled in from the posting. Check it and add to your tracker.', kind: 'ok' }
+            : {
+                text: `That page did not show a job posting. Open the job on the company's own careers site and paste that link here.`,
+                kind: 'warn',
+              }
+        );
+      })
+      .catch(() => {
+        if (readingFor.current !== url) return;
+        setStatus({
+          text: `Couldn't open that link. Paste the link to the job on the company's own careers site, or fill in the details yourself.`,
+          kind: 'warn',
+        });
+      });
+  }
 
   useEffect(() => {
     const d = dialogRef.current;
     if (!d) return;
     if (!opportunity) {
-      openFor.current = null;
+      readingFor.current = null;
+      lastRead.current = null;
       if (d.open) d.close();
       return;
     }
-    const id = opportunity.id;
-    openFor.current = id;
-    setForm(formFrom(opportunity));
-    setParsed(null);
+    const loc = opportunity.location ?? '';
+    setForm({
+      company: opportunity.company,
+      title: opportunity.title,
+      location: loc,
+      workMode: /remote/i.test(loc) ? 'Remote' : '',
+      salary: '',
+      appliedAt: today(),
+      notes: '',
+    });
+    setLink(opportunity.url);
     setSaving(false);
+    lastRead.current = null;
     if (!d.open) d.showModal();
-
-    // Sample rows (shown until the scanner fills the feed, and in the demo
-    // session) link to general careers pages, not a single posting.
-    if (id.startsWith('seed-')) {
-      setStatus({
-        text: 'This is a sample row. Its link is a general careers page, so there is no posting to read. Real feed rows link to the actual posting.',
-        kind: 'warn',
-      });
-      return;
-    }
-    setStatus({ text: 'Reading the posting for pay and details…', kind: 'busy' });
-
-    parsePosting(opportunity.url)
-      .then((r) => {
-        if (openFor.current !== id) return;
-        setParsed(r);
-        // Only fill what the feed row and the member left empty.
-        setForm((f) => {
-          if (!f) return f;
-          const next = { ...f };
-          for (const k of ['company', 'title', 'location', 'workMode', 'salary'] as const) {
-            if (!next[k] && r[k]) next[k] = r[k];
-          }
-          return next;
-        });
-        const gotBody = (r.description || '').length > 200;
-        setStatus(
-          gotBody
-            ? { text: 'Read the posting. A prep sheet will be saved with it.', kind: 'ok' }
-            : { text: `Couldn't read much from ${r.host}. Add any details you know.`, kind: 'warn' }
-        );
-      })
-      .catch((err) => {
-        if (openFor.current !== id) return;
-        const why = (err as { message?: string })?.message;
-        setStatus({
-          text: `Couldn't read the posting${why ? ` (${why})` : ''}. Add any details you know.`,
-          kind: 'warn',
-        });
-      });
+    read(opportunity.url);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opportunity]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (!opportunity || !form || !store || saving) return;
+    const url = normalizeLink(link) || opportunity.url;
     setSaving(true);
     try {
       const fields = Object.fromEntries(
         Object.entries(form).map(([k, v]) => [k, v.trim()])
-      ) as Form;
+      ) as Partial<Application>;
+      // Only keep parsed details if they came from the link being saved.
+      const p = parsed && lastRead.current === url ? parsed : null;
       const app = await store.createApplication({
-        url: opportunity.url,
-        ...parsedDetails(parsed),
-        ...(fields as Partial<Application>),
+        url: p?.applyUrl || url,
+        ...parsedDetails(p),
+        ...fields,
+        stage: 'applied',
       });
       onSaved(app);
     } catch (err) {
@@ -145,18 +162,48 @@ export default function TrackApplyDialog({
     <dialog ref={dialogRef} className="trk-dialog" onClose={onCancel}>
       {opportunity && form && (
         <form onSubmit={submit}>
-          <header className="mb-3">
+          <header className="mb-4">
             <h2 className="font-display text-[1.2rem] font-semibold text-ink">Add to your tracker</h2>
-            <p className="mt-0.5 text-[0.82rem] text-ink-soft">
-              Nice, you applied. Check the details and it goes straight into your Tracker.
-            </p>
           </header>
+
+          <label className="flex flex-col gap-1.5 text-[0.78rem] font-semibold text-ink-soft">
+            Job posting link
+            <input
+              className="portal-input"
+              type="url"
+              inputMode="url"
+              spellCheck={false}
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              onPaste={(e) => {
+                const text = e.clipboardData.getData('text');
+                if (text) {
+                  e.preventDefault();
+                  setLink(text.trim());
+                  read(text);
+                }
+              }}
+              onBlur={() => read(link)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  read(link);
+                }
+              }}
+            />
+          </label>
+          <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-soft">
+            Use the original job page on the company's careers site (for example Workday, Greenhouse
+            or Lever), not a Simplify, LinkedIn or Handshake link. We fill in the rest.
+          </p>
+
           {status.text && (
-            <p className={`trk-status trk-status--${status.kind || 'plain'}`} role="status">
+            <p className={`trk-status trk-status--${status.kind || 'plain'} mt-3`} role="status">
               {status.text}
             </p>
           )}
-          <div className="grid gap-3 sm:grid-cols-2">
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <Field label="Company">
               <input className="portal-input" required value={form.company} onChange={set('company')} />
             </Field>
@@ -175,19 +222,14 @@ export default function TrackApplyDialog({
               </select>
             </Field>
             <Field label="Pay">
-              <input
-                className="portal-input"
-                placeholder="e.g. $40/hr"
-                value={form.salary}
-                onChange={set('salary')}
-              />
+              <input className="portal-input" placeholder="e.g. $40/hr" value={form.salary} onChange={set('salary')} />
             </Field>
             <Field label="Applied on">
               <input className="portal-input" type="date" value={form.appliedAt} onChange={set('appliedAt')} />
             </Field>
             <Field label="Notes" wide>
               <textarea
-                className="portal-input min-h-[72px] resize-y"
+                className="portal-input min-h-[64px] resize-y"
                 rows={2}
                 placeholder="Referral, recruiter name, anything to remember"
                 value={form.notes}
