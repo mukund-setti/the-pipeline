@@ -1,0 +1,19 @@
+---
+/**
+ * Resume viewer: shows the member's stored resume inside the portal so the
+ * address bar reads pipelineco.org instead of a storage link. See
+ * ResumeViewer.tsx.
+ */
+import PortalShell from '../../../components/portal/PortalShell.astro';
+import { PORTAL_SCHOOLS, schoolBySlug } from '../../../lib/schools';
+import ResumeViewer from '../../../components/portal/ResumeViewer';
+
+export function getStaticPaths() {
+  return PORTAL_SCHOOLS.map((s) => ({ params: { school: s.slug } }));
+}
+
+const school = schoolBySlug(Astro.params.school as string)!;
+---
+<PortalShell school={school} active="home" title="Your resume">
+  <ResumeViewer client:only="react" school={school.slug} />
+</PortalShell>

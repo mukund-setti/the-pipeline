@@ -212,7 +212,7 @@ export default function TrackerApp({ school }: { school: string }) {
       } catch {
         if (!cancelled) {
           setLoadError(
-            'Your tracker could not load. If this keeps happening, the applications table may not be set up yet.'
+            'Your Career Portal could not load. If this keeps happening, the applications table may not be set up yet.'
           );
         }
       }
@@ -314,6 +314,24 @@ export default function TrackerApp({ school }: { school: string }) {
     const patch: ApplicationInput = { parsedAt: new Date().toISOString(), parseWarning: '' };
     try {
       const r = await parsePosting(a.url);
+      if (r.isPosting === false) {
+        const cleared: ApplicationInput = {
+          ...patch,
+          description: '',
+          sections: {},
+          skills: [],
+          experience: '',
+          parseWarning: r.warnings?.[0] || 'That link is not a job posting.',
+        };
+        const saved = await update(a.id, cleared);
+        setRefreshing((prev) => {
+          const next = new Set(prev);
+          next.delete(a.id);
+          return next;
+        });
+        if (saved) say(saved.parseWarning);
+        return;
+      }
       const gotBody = (r.description || '').length > 200;
       for (const k of ['team', 'level', 'source', 'jobRef'] as const) {
         if (r[k]) patch[k] = r[k];
@@ -363,6 +381,10 @@ export default function TrackerApp({ school }: { school: string }) {
       .then((r) => {
         if (editorKey.current !== key) return; // closed or replaced meanwhile
         setEditor((cur) => (cur && cur.key === key && cur.mode === 'add' ? { ...cur, parsed: r } : cur));
+        if (r.isPosting === false) {
+          setStatus({ text: r.warnings?.[0] || 'That link is not a job posting.', kind: 'warn' });
+          return;
+        }
         // Fill only what the member has not typed yet.
         setForm((f) => {
           const next = { ...f };
@@ -943,7 +965,19 @@ function AppRow(p: RowProps) {
             ))}
           </select>
           <button type="button" className="trk-more" aria-expanded={p.open} onClick={p.onToggle}>
-            {p.open ? 'Less' : 'More'}
+            {p.open ? 'Hide details' : 'Notes & prep'}
+            <svg
+              className="h-3.5 w-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
           </button>
         </div>
       </div>

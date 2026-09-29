@@ -466,15 +466,28 @@
   border-color: transparent;
   color: theme(colors.gold.DEFAULT);
 }
+/* Details toggle: a tinted pill so the drawer (notes, prep sheet, history)
+   reads as something worth opening, not a footnote. */
 .trk-more {
-  border: 0;
-  background: none;
-  padding: 6px 4px;
-  font: 600 0.78rem/1 theme(fontFamily.sans);
-  color: theme(colors.ink.soft);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--school-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--school-accent) 14%, transparent);
+  padding: 7px 14px;
+  font: 600 0.82rem/1 theme(fontFamily.sans);
+  color: theme(colors.ink.DEFAULT);
   cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
-.trk-more:hover { color: theme(colors.ink.DEFAULT); }
+.trk-more:hover,
+.trk-more[aria-expanded='true'] {
+  border-color: var(--school-accent);
+  background: color-mix(in srgb, var(--school-accent) 26%, transparent);
+}
+.trk-more svg { transition: transform 0.2s ease; }
+.trk-more[aria-expanded='true'] svg { transform: rotate(180deg); }
 
 /* Drawer: notes and prep sheet on the left, history on the right. */
 .trk-detail {
