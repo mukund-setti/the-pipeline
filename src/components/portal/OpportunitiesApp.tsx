@@ -2,8 +2,11 @@
  * Opportunities island: the AI-tracked jobs surface at /portal/<school>/opportunities.
  * Rows come from the shared portal store (Supabase when live, seeded samples
  * otherwise); the serverless scanner at /api/opportunities-scan refreshes the
- * table daily from Simplify's GitHub boards and Hacker News hiring threads.
- * Members can filter by kind, search, mark rows saved or applied, and hand a
+ * table daily from top companies' careers pages, community GitHub boards
+ * (Simplify, speedyapply, CSCareers) and Hacker News hiring threads.
+ * Members switch between "Top picks" (high-paying, high-clout employers, see
+ * src/lib/jobs/tiers.ts) and all openings, filter by kind, search, mark rows
+ * saved or applied, and hand a
  * natural-language query to /api/opportunities-search ("Ask AI"), which
  * returns a structured filter layer. When that endpoint is unavailable (demo
  * session, missing key, network trouble) the same query is parsed locally so
@@ -28,6 +31,7 @@ import type { PortalStore } from '../../lib/portal/data';
 import { getSupabase } from '../../lib/supabase';
 import { normUrl } from '../../lib/portal/tracker';
 import TrackApplyDialog from './TrackApplyDialog';
+import { isTopPick, payTag, TOP_TAG } from '../../lib/jobs/tiers';
 
 type KindFilter = 'all' | OpportunityKind;
 
@@ -48,6 +52,18 @@ const KIND_LABELS: Record<OpportunityKind, string> = {
   'new-grad': 'New grad',
   program: 'Program',
 };
+
+type Tier = 'top' | 'all';
+
+const TIER_FILTERS: { key: Tier; label: string }[] = [
+  { key: 'top', label: 'Top picks' },
+  { key: 'all', label: 'All openings' },
+];
+
+const TIER_STORAGE_KEY = 'pipeline:opportunities-tier';
+
+/** Rows rendered per "Show more" step; the feed holds thousands. */
+const PAGE_SIZE = 50;
 
 const DAY_MS = 86_400_000;
 
@@ -76,6 +92,7 @@ type AiFilter = {
   keywords: string[];
   remote: boolean | null;
   newOnly: boolean;
+  topOnly: boolean;
   explanation: string;
 };
 
@@ -98,7 +115,14 @@ function normalizeFilters(raw: unknown, explanation: string): AiFilter {
         .map((k) => k.trim().toLowerCase())
     : [];
   const remote = r.remote === true ? true : r.remote === false ? false : null;
-  return { kinds, keywords, remote, newOnly: r.newOnly === true, explanation };
+  return {
+    kinds,
+    keywords,
+    remote,
+    newOnly: r.newOnly === true,
+    topOnly: r.topOnly === true,
+    explanation,
+  };
 }
 
 /**
@@ -125,6 +149,10 @@ function parseQueryLocally(q: string): AiFilter {
   const newOnly = /\b(new|recent\w*|latest|today)\b/.test(text);
   text = text.replace(/\b(new|recent\w*|latest|today)\b/g, ' ');
 
+  const topWords = /\b(top|best|faang\+?|big tech|high(est)?[- ]pay\w*|well[- ]paid|prestigious|elite)\b/g;
+  const topOnly = topWords.test(text);
+  text = text.replace(topWords, ' ');
+
   const keywords = Array.from(
     new Set(
       text
@@ -140,11 +168,12 @@ function parseQueryLocally(q: string): AiFilter {
   }
   if (remote === true) parts.push('remote');
   if (newOnly) parts.push('posted recently');
+  if (topOnly) parts.push('top picks');
   if (keywords.length) parts.push(keywords.join(', '));
   const explanation = parts.length
     ? 'Filtered locally: ' + parts.join(', ')
     : 'Filtered locally: nothing specific recognized';
-  return { kinds, keywords, remote, newOnly, explanation };
+  return { kinds, keywords, remote, newOnly, topOnly, explanation };
 }
 
 /**
@@ -198,6 +227,8 @@ export default function OpportunitiesApp({ school }: { school: string }) {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [kind, setKind] = useState<KindFilter>('all');
+  const [tier, setTierState] = useState<Tier>('all');
+  const [visible, setVisible] = useState(PAGE_SIZE);
   const [query, setQuery] = useState('');
   const [actions, setActions] = useState<JobActionMap>({});
   const [actionFilter, setActionFilter] = useState<JobAction | null>(null);
@@ -244,6 +275,24 @@ export default function OpportunitiesApp({ school }: { school: string }) {
       window.clearTimeout(trackedTimer.current);
     };
   }, [school]);
+
+  // Remember the member's tier choice on this device (best effort).
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(TIER_STORAGE_KEY) === 'top') setTierState('top');
+    } catch {
+      /* storage blocked: default stays */
+    }
+  }, []);
+
+  const setTier = (next: Tier) => {
+    setTierState(next);
+    try {
+      localStorage.setItem(TIER_STORAGE_KEY, next);
+    } catch {
+      /* storage blocked: choice lasts this visit */
+    }
+  };
 
   const showActionNote = (msg: string) => {
     setActionNote(msg);
@@ -320,6 +369,12 @@ export default function OpportunitiesApp({ school }: { school: string }) {
     setAiLoading(false);
   };
 
+  /** Tier is fixed per row, so compute it once per load. */
+  const topIds = useMemo(
+    () => new Set(opportunities.filter(isTopPick).map((o) => o.id)),
+    [opportunities]
+  );
+
   const savedCount = useMemo(
     () => opportunities.filter((o) => actions[o.id]?.saved).length,
     [opportunities, actions]
@@ -339,6 +394,7 @@ export default function OpportunitiesApp({ school }: { school: string }) {
         if (aiFilter.remote === true && !loc.includes('remote')) return false;
         if (aiFilter.remote === false && loc.includes('remote')) return false;
         if (aiFilter.newOnly && !isNew(o.postedAt)) return false;
+        if (aiFilter.topOnly && !topIds.has(o.id)) return false;
         if (aiFilter.keywords.length) {
           const haystack = [o.company, o.title, ...o.tags, o.location ?? '']
             .join(' ')
@@ -347,6 +403,7 @@ export default function OpportunitiesApp({ school }: { school: string }) {
         }
         return true;
       })
+      .filter((o) => (tier === 'top' ? topIds.has(o.id) : true))
       .filter((o) => (kind === 'all' ? true : o.kind === kind))
       .filter((o) => (actionFilter ? !!actions[o.id]?.[actionFilter] : true))
       .filter((o) => {
@@ -357,7 +414,10 @@ export default function OpportunitiesApp({ school }: { school: string }) {
         return haystack.includes(q);
       })
       .sort((a, b) => b.postedAt.localeCompare(a.postedAt));
-  }, [opportunities, kind, query, aiFilter, actionFilter, actions]);
+  }, [opportunities, tier, topIds, kind, query, aiFilter, actionFilter, actions]);
+
+  // Any filter change starts the list over at the first page.
+  useEffect(() => setVisible(PAGE_SIZE), [tier, kind, query, aiFilter, actionFilter]);
 
   /** Shared pill styling so the action pills match the kind pills exactly. */
   const pillClass = (active: boolean) =>
@@ -391,8 +451,9 @@ export default function OpportunitiesApp({ school }: { school: string }) {
           </span>
         </div>
         <p className="max-w-[58ch] text-[0.92rem] leading-relaxed text-ink-soft">
-          Roles tracked automatically across Simplify's GitHub boards and Hacker News
-          hiring threads, plus drops from members, refreshed daily by the scanner.
+          Internships, new-grad roles and programs pulled daily from top companies'
+          careers pages, Simplify, speedyapply, CSCareers and Hacker News hiring
+          threads. Top picks are the high-paying, high-clout employers.
         </p>
         {/* Resume nudge: one quiet line until a file is on record. */}
         {resume === null && (
@@ -423,6 +484,40 @@ export default function OpportunitiesApp({ school }: { school: string }) {
             </span>
           </div>
         ) : null}
+      </div>
+
+      {/* Tier toggle: top picks vs the full feed. */}
+      <div
+        className="mb-4 inline-flex rounded-pill border border-line p-1"
+        role="group"
+        aria-label="Which openings to show"
+      >
+        {TIER_FILTERS.map((t) => {
+          const active = tier === t.key;
+          const count = t.key === 'top' ? topIds.size : opportunities.length;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setTier(t.key)}
+              aria-pressed={active}
+              className={
+                'rounded-pill px-4 py-1.5 text-[0.82rem] font-semibold transition-colors ' +
+                (active ? 'shadow-sm' : 'text-ink-soft hover:text-ink')
+              }
+              style={
+                active ? { background: 'var(--school-deep)', color: 'var(--school-soft)' } : undefined
+              }
+            >
+              {t.label}
+              {!loading && (
+                <span className="ml-1.5 text-[0.72rem] font-medium opacity-75">
+                  {count.toLocaleString()}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Controls: kind pills, saved/applied pills, search, Ask AI. */}
@@ -564,7 +659,9 @@ export default function OpportunitiesApp({ school }: { school: string }) {
       {/* Counts line. */}
       {!loading && (
         <p className="mb-3 text-[0.78rem] font-medium text-ink-soft">
-          Showing {filtered.length} of {opportunities.length}
+          {filtered.length.toLocaleString()}{' '}
+          {filtered.length === 1 ? 'opening' : 'openings'}
+          {tier === 'top' ? ' at top companies' : ''}
         </p>
       )}
 
@@ -602,16 +699,22 @@ export default function OpportunitiesApp({ school }: { school: string }) {
             Nothing matches that filter
           </span>
           <span className="max-w-[40ch] text-[0.85rem] text-ink-soft">
-            Try a different search or kind. The scanner adds new rows every day, so
-            check back tomorrow too.
+            {tier === 'top'
+              ? 'Try All openings, or a different search or kind. '
+              : 'Try a different search or kind. '}
+            The scanner adds new rows every day, so check back tomorrow too.
           </span>
         </div>
       ) : (
+        <>
         <ul className="flex flex-col gap-3">
-          {filtered.map((o) => {
+          {filtered.slice(0, visible).map((o) => {
             const sample = o.id.startsWith('seed-') && (storeRef.current?.live ?? true);
             const saved = !!actions[o.id]?.saved;
             const applied = !!actions[o.id]?.applied;
+            const top = topIds.has(o.id);
+            const pay = payTag(o.tags);
+            const topics = o.tags.filter((t) => t !== TOP_TAG && t !== pay);
             return (
               <li key={o.id} className="portal-card p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -627,6 +730,15 @@ export default function OpportunitiesApp({ school }: { school: string }) {
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.8rem] text-ink-soft">
                       <span className="portal-chip">{KIND_LABELS[o.kind]}</span>
+                      {top && (
+                        <span
+                          className="portal-chip"
+                          style={{ background: 'var(--school-soft)', color: 'var(--school-deep)' }}
+                        >
+                          Top pick
+                        </span>
+                      )}
+                      {pay && <span className="font-semibold text-ink">{pay}</span>}
                       {o.location && <span>{o.location}</span>}
                       <span aria-hidden="true">·</span>
                       <span>{o.source}</span>
@@ -635,9 +747,9 @@ export default function OpportunitiesApp({ school }: { school: string }) {
                         posted {relativeTime(o.postedAt)}
                       </span>
                     </div>
-                    {o.tags.length > 0 && (
+                    {topics.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1.5">
-                        {o.tags.slice(0, 4).map((t) => (
+                        {topics.slice(0, 4).map((t) => (
                           <span
                             key={t}
                             className="rounded-pill border border-line px-2 py-px text-[0.68rem] font-semibold text-ink-soft"
@@ -740,6 +852,21 @@ export default function OpportunitiesApp({ school }: { school: string }) {
             );
           })}
         </ul>
+        {filtered.length > visible && (
+          <div className="mt-5 flex justify-center">
+            <button
+              type="button"
+              className="portal-btn-ghost"
+              onClick={() => setVisible((v) => v + PAGE_SIZE)}
+            >
+              Show {Math.min(PAGE_SIZE, filtered.length - visible)} more
+              <span className="text-ink-soft">
+                ({(filtered.length - visible).toLocaleString()} left)
+              </span>
+            </button>
+          </div>
+        )}
+        </>
       )}
 
       <TrackApplyDialog

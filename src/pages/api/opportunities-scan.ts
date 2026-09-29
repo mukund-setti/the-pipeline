@@ -1,24 +1,39 @@
 import type { APIRoute } from 'astro';
 import { createClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
+import {
+  scanCompanyBoards,
+  scanGithubBoards,
+  stripTracking,
+  type Candidate,
+} from '../../lib/jobs/sources';
+import { isTopPick, normCompany } from '../../lib/jobs/tiers';
 
 /**
  * Opportunity scanner: the engine behind the portal's "AI-tracked" surface.
  * Vercel Cron hits this daily (see vercel.json) and it refills the public
- * `opportunities` table from two sources:
+ * `opportunities` table from three kinds of source:
  *
- *  1. Simplify's GitHub boards (deterministic): the internship and new-grad
- *     README tables are parsed directly, no AI involved.
- *  2. Hacker News "Ask HN: Who is hiring?" (AI-extracted): the latest thread's
+ *  1. Company careers pages (deterministic, src/lib/jobs/sources.ts): the
+ *     public Greenhouse, Ashby and Lever boards of curated top employers,
+ *     filtered to US intern, new-grad and early-career titles.
+ *  2. Community GitHub boards (deterministic, same module): SimplifyJobs,
+ *     speedyapply and vanshb03 / CSCareers README tables.
+ *  3. Hacker News "Ask HN: Who is hiring?" (AI-extracted): the latest thread's
  *     top-level comments are handed to Claude in one request, which returns a
  *     strict JSON list of undergrad/new-grad-relevant roles with URLs.
+ *
+ * The same posting often shows up on several boards, so candidates are
+ * deduped by URL and by company + title + city, in source priority order
+ * (direct careers page first), and duplicates donate their tags (pay, top
+ * pick) to the row that is kept.
  *
  * Security model: the Supabase service-role key lives only in server env vars
  * and never ships to the client; the endpoint itself is gated by CRON_SECRET
  * (Vercel Cron sends `Authorization: Bearer $CRON_SECRET` automatically when
- * that env var exists). Rows are insert-only and deduped by URL, so the "New"
- * chip in the portal stays honest: a row's posted_at is the first time the
- * scanner saw it.
+ * that env var exists). Rows are insert-only and deduped by URL. posted_at is
+ * the source's own posting date when it gives one (else first-seen), so the
+ * portal's "New" chip means new at the company, not new to the scanner.
  */
 export const prerender = false;
 
@@ -37,162 +52,6 @@ const json = (body: unknown, status = 200) =>
     status,
     headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
   });
-
-type Candidate = {
-  title: string;
-  company: string;
-  url: string;
-  kind: 'internship' | 'new-grad' | 'program';
-  source: string;
-  tags: string[];
-  location: string | null;
-};
-
-/* --------------------------- shared text helpers ------------------------ */
-
-/** Strip markdown/link/HTML noise from a table cell down to plain text. */
-function cleanCell(cell: string): string {
-  return cell
-    .replace(/\*\*/g, '')
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // [Name](url) -> Name
-    .replace(/<[^>]+>/g, ' ') // html tags (badges, <br>, <a>)
-    .replace(/&amp;/g, '&')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-/** First https URL in a cell (markdown link or <a href>), utm params removed. */
-function firstUrl(cell: string): string | null {
-  const match = cell.match(/https:\/\/[^\s"'<>)\]]+/);
-  if (!match) return null;
-  return stripUtm(match[0]);
-}
-
-function stripUtm(raw: string): string {
-  try {
-    const u = new URL(raw);
-    for (const key of [...u.searchParams.keys()]) {
-      if (key.toLowerCase().startsWith('utm')) u.searchParams.delete(key);
-    }
-    return u.toString().replace(/\?$/, '');
-  } catch {
-    return raw.split('?utm')[0];
-  }
-}
-
-/* ---------------------- source 1: Simplify GitHub ----------------------- */
-
-const INTERNSHIP_READMES = [
-  'https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/README.md',
-  'https://raw.githubusercontent.com/SimplifyJobs/Summer2026-Internships/dev/README.md',
-];
-const NEW_GRAD_READMES = [
-  'https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/README.md',
-];
-
-async function fetchFirstReachable(urls: string[]): Promise<string | null> {
-  for (const url of urls) {
-    try {
-      const res = await fetch(url);
-      if (res.ok) return await res.text();
-    } catch {
-      /* try the next mirror */
-    }
-  }
-  return null;
-}
-
-/**
- * Parse a Simplify README. The repos now render their boards as HTML tables
- * (<tr><td>Company</td><td>Role</td><td>Location</td><td>Application</td>
- * <td>Age</td></tr>); older revisions used markdown pipe tables, kept below
- * as a fallback. In both formats `↳` (or an empty company cell) means "same
- * company as the previous row" and 🔒 marks closed postings. Rows are
- * newest-first, so the first 60 parsed rows are the fresh ones.
- */
-function parseSimplifyReadme(md: string, kind: 'internship' | 'new-grad'): Candidate[] {
-  const html = parseHtmlRows(md, kind);
-  return html.length ? html : parseMarkdownRows(md, kind);
-}
-
-function parseHtmlRows(md: string, kind: 'internship' | 'new-grad'): Candidate[] {
-  const out: Candidate[] = [];
-  let lastCompany = '';
-  for (const rowMatch of md.matchAll(/<tr>([\s\S]*?)<\/tr>/g)) {
-    if (out.length >= 60) break;
-    const row = rowMatch[1];
-    if (row.includes('<th')) continue; // header row
-    if (row.includes('\u{1F512}')) continue; // 🔒 closed posting
-    const cells = [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((m) =>
-      m[1].replace(/&amp;/g, '&').replace(/<br\s*\/?>/g, ' · ')
-    );
-    if (cells.length < 4) continue;
-    // cleanCell leaves emoji like the 🔥 "popular" marker; trim leading symbols.
-    const companyText = cleanCell(cells[0]).replace(/^[^\p{L}\p{N}]+/u, '');
-    const company = !companyText || companyText === '↳' ? lastCompany : companyText;
-    if (!company) continue;
-    lastCompany = company;
-    const title = cleanCell(cells[1]);
-    const location = cleanCell(cells[2]) || null;
-    // The application cell is <a href="apply-url"><img ...>, so the first
-    // https URL in it is the apply link, not a badge image.
-    const url = firstUrl(cells[3]);
-    if (!title || !url) continue;
-    out.push({
-      title,
-      company,
-      url,
-      kind,
-      source: 'Simplify · GitHub',
-      tags: [],
-      location,
-    });
-  }
-  return out;
-}
-
-function parseMarkdownRows(md: string, kind: 'internship' | 'new-grad'): Candidate[] {
-  const out: Candidate[] = [];
-  let lastCompany = '';
-  for (const line of md.split('\n')) {
-    if (out.length >= 60) break;
-    if (!line.trimStart().startsWith('|')) continue;
-    if (line.includes('\u{1F512}')) continue; // 🔒 closed posting
-    const cells = line.split('|').slice(1, -1).map((c) => c.trim());
-    if (cells.length < 4) continue;
-    const companyText = cleanCell(cells[0]);
-    // Skip the header row and the |---| separator row.
-    if (/^company$/i.test(companyText)) continue;
-    if (/^:?-{2,}:?$/.test(cells[0])) continue;
-    const company =
-      !companyText || companyText === '↳' ? lastCompany : companyText;
-    if (!company) continue;
-    lastCompany = company;
-    const title = cleanCell(cells[1]);
-    const location = cleanCell(cells[2]) || null;
-    const url = firstUrl(cells[3]);
-    if (!title || !url) continue;
-    out.push({
-      title,
-      company,
-      url,
-      kind,
-      source: 'Simplify · GitHub',
-      tags: [],
-      location,
-    });
-  }
-  return out;
-}
-
-async function scanGithub(): Promise<Candidate[]> {
-  const candidates: Candidate[] = [];
-  const internMd = await fetchFirstReachable(INTERNSHIP_READMES);
-  if (internMd) candidates.push(...parseSimplifyReadme(internMd, 'internship'));
-  const gradMd = await fetchFirstReachable(NEW_GRAD_READMES);
-  if (gradMd) candidates.push(...parseSimplifyReadme(gradMd, 'new-grad'));
-  return candidates;
-}
 
 /* ------------------- source 2: Hacker News, via Claude ------------------ */
 
@@ -308,7 +167,7 @@ async function scanHackerNews(): Promise<Candidate[]> {
     .map((r) => ({
       title: r.title.slice(0, 160),
       company: r.company.slice(0, 80),
-      url: stripUtm(r.url),
+      url: stripTracking(r.url),
       kind: r.kind,
       source: 'Hacker News · Who is hiring',
       tags: Array.isArray(r.tags)
@@ -316,6 +175,7 @@ async function scanHackerNews(): Promise<Candidate[]> {
         : [],
       location:
         typeof r.location === 'string' && r.location ? r.location.slice(0, 80) : null,
+      postedAt: null,
     }));
 }
 
@@ -372,6 +232,43 @@ async function notifyDiscord(webhook: string, fresh: Candidate[]): Promise<void>
   if (!res.ok) throw new Error(`webhook ${res.status}`);
 }
 
+/* ------------------------------- dedupe --------------------------------- */
+
+/** Upper bound per run; a first run backfills a few thousand rows. */
+const MAX_INSERTS = 8000;
+
+/** Company + title + first city: the same role mirrored on several boards. */
+function postingKey(c: { company: string; title: string; location: string | null }): string {
+  const city = (c.location ?? '').toLowerCase().split(/[,·;•|(]/)[0].trim();
+  const title = c.title.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  return `${normCompany(c.company)}|${title}|${city}`;
+}
+
+/**
+ * First sighting wins (sources arrive in priority order); later duplicates
+ * merge their tags in, so a careers-page row still picks up speedyapply's
+ * pay tag and Simplify's category.
+ */
+function dedupe(all: Candidate[]): Candidate[] {
+  const kept: Candidate[] = [];
+  const byUrl = new Map<string, Candidate>();
+  const byKey = new Map<string, Candidate>();
+  for (const c of all) {
+    const key = postingKey(c);
+    const prior = byUrl.get(c.url) ?? byKey.get(key);
+    if (prior) {
+      prior.tags = [...new Set([...prior.tags, ...c.tags])].slice(0, 6);
+      prior.postedAt ??= c.postedAt;
+      continue;
+    }
+    const row = { ...c, tags: [...c.tags] };
+    kept.push(row);
+    byUrl.set(c.url, row);
+    byKey.set(key, row);
+  }
+  return kept;
+}
+
 /* ------------------------------ the handler ----------------------------- */
 
 const handler: APIRoute = async ({ request }) => {
@@ -388,30 +285,28 @@ const handler: APIRoute = async ({ request }) => {
   }
 
   const errors: string[] = [];
-  const scanned = { github: 0, hn: 0 };
-  let github: Candidate[] = [];
-  let hn: Candidate[] = [];
 
   // Each source is isolated so one failing feed never kills the whole run.
-  try {
-    github = await scanGithub();
-    scanned.github = github.length;
-  } catch (e: any) {
-    errors.push(`github: ${e?.message ?? 'failed'}`);
-  }
-  try {
-    hn = await scanHackerNews();
-    scanned.hn = hn.length;
-  } catch (e: any) {
-    errors.push(`hn: ${e?.message ?? 'failed'}`);
-  }
+  // Listed in dedupe priority: direct careers links beat board mirrors.
+  const sources: [string, () => Promise<Candidate[]>][] = [
+    ['careers', scanCompanyBoards],
+    ['github', scanGithubBoards],
+    ['hn', scanHackerNews],
+  ];
+  const settled = await Promise.allSettled(sources.map(([, scan]) => scan()));
+  const scanned: Record<string, number> = {};
+  const all: Candidate[] = [];
+  settled.forEach((r, i) => {
+    const name = sources[i][0];
+    if (r.status === 'fulfilled') {
+      scanned[name] = r.value.length;
+      all.push(...r.value);
+    } else {
+      errors.push(`${name}: ${r.reason?.message ?? 'failed'}`);
+    }
+  });
 
-  // Dedupe within the batch by URL (first sighting wins).
-  const byUrl = new Map<string, Candidate>();
-  for (const c of [...github, ...hn]) {
-    if (!byUrl.has(c.url)) byUrl.set(c.url, c);
-  }
-  const candidates = [...byUrl.values()];
+  const candidates = dedupe(all);
 
   let inserted = 0;
   let freshRows: Candidate[] = [];
@@ -420,49 +315,68 @@ const handler: APIRoute = async ({ request }) => {
       auth: { persistSession: false },
     });
 
-    // Which of these URLs do we already know? Checked in batches to keep the
-    // .in() filter a reasonable size. Rows are never updated afterwards, so a
-    // posting's posted_at stays its first-seen date and "New" stays honest.
-    const existing = new Set<string>();
-    const urls = candidates.map((c) => c.url);
-    for (let i = 0; i < urls.length; i += 100) {
-      const batch = urls.slice(i, i + 100);
+    // Everything already stored, by URL and by posting key, so a job that
+    // moved boards (new URL, same role) is not inserted twice across days.
+    const knownUrls = new Set<string>();
+    const knownKeys = new Set<string>();
+    for (let from = 0; from < 50_000; from += 1000) {
       const { data, error } = await supa
         .from('opportunities')
-        .select('url')
-        .in('url', batch);
+        .select('url, company, title, location')
+        .range(from, from + 999);
       if (error) throw error;
-      for (const row of data ?? []) existing.add(row.url);
+      for (const row of data ?? []) {
+        knownUrls.add(row.url);
+        knownKeys.add(postingKey(row));
+      }
+      if (!data || data.length < 1000) break;
     }
 
-    const fresh = candidates.filter((c) => !existing.has(c.url)).slice(0, 100);
-    if (fresh.length > 0) {
-      const { error } = await supa.from('opportunities').insert(
-        fresh.map((c) => ({
-          title: c.title,
-          company: c.company,
-          url: c.url,
-          kind: c.kind,
-          source: c.source,
-          tags: c.tags,
-          location: c.location,
-          // posted_at defaults to now() in the schema.
-        }))
-      );
+    const fresh = candidates
+      .filter((c) => !knownUrls.has(c.url) && !knownKeys.has(postingKey(c)))
+      .slice(0, MAX_INSERTS);
+
+    // ignoreDuplicates turns a URL race into a skip instead of a failed batch;
+    // the returned rows are exactly the ones that landed.
+    const landed = new Set<string>();
+    for (let i = 0; i < fresh.length; i += 500) {
+      const { data, error } = await supa
+        .from('opportunities')
+        .upsert(
+          fresh.slice(i, i + 500).map((c) => ({
+            title: c.title,
+            company: c.company,
+            url: c.url,
+            kind: c.kind,
+            source: c.source,
+            tags: c.tags,
+            location: c.location,
+            // Omitted posted_at falls back to now() in the schema.
+            ...(c.postedAt ? { posted_at: c.postedAt } : {}),
+          })),
+          { onConflict: 'url', ignoreDuplicates: true }
+        )
+        .select('url');
       if (error) throw error;
-      inserted = fresh.length;
-      freshRows = fresh;
+      for (const row of data ?? []) landed.add(row.url);
     }
+    freshRows = fresh.filter((c) => landed.has(c.url));
+    inserted = freshRows.length;
   } catch (e: any) {
     errors.push(`db: ${e?.message ?? 'failed'}`);
   }
 
   // Announce fresh drops in Discord. Best-effort: a webhook hiccup lands in
   // errors[] but never fails the run.
+  // Only roles posted in the last few days count as drops (a first run or a
+  // new board backfills thousands of older rows); top picks are listed first.
+  const drops = freshRows
+    .filter((c) => !c.postedAt || Date.now() - Date.parse(c.postedAt) < 3 * 86_400_000)
+    .sort((a, b) => Number(isTopPick(b)) - Number(isTopPick(a)));
   let notified = false;
-  if (inserted > 0 && DISCORD_DROPS_WEBHOOK) {
+  if (drops.length > 0 && DISCORD_DROPS_WEBHOOK) {
     try {
-      await notifyDiscord(DISCORD_DROPS_WEBHOOK, freshRows);
+      await notifyDiscord(DISCORD_DROPS_WEBHOOK, drops);
       notified = true;
     } catch (e: any) {
       errors.push(`discord: ${e?.message ?? 'failed'}`);

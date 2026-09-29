@@ -47,6 +47,23 @@ was stamped from their auth email). The client never chooses its school, so
 even a modified client cannot read or post in another chapter's room. The
 browser guard in the portal UI is just UX; RLS is the real wall.
 
+### Usage guardrails
+
+After `schema.sql`, run `supabase/guardrails.sql` the same way. It adds:
+
+- `consume_api_quota()` and the `api_usage` table: daily per-member limits on
+  AI search (25/day, plus a 1500/day site-wide ceiling, about $15) and job-link
+  reads (60/day). Days reset at midnight UTC. Limits live in the function; edit
+  them there and re-run the file.
+- Database-side rate limits: 20 chat messages a minute, 10 forum threads and
+  40 replies an hour, 1000 tracked applications per member.
+
+Until it is run, AI search answers 503 and members get the simple built-in
+search instead; job-link reading keeps working without a limit.
+
+Also set a monthly spend limit on the Anthropic key (Console, Settings,
+Limits) as the hard backstop.
+
 ## 2. Auth providers
 
 ### Google (already working)
@@ -117,14 +134,27 @@ them.
 
 What it does, per run:
 
-- **Simplify GitHub boards**: the community-maintained internship and new-grad
-  README tables, parsed directly. No AI needed.
+- **Company careers pages**: the public Greenhouse, Ashby and Lever boards of
+  ~55 top employers (list in `src/lib/jobs/sources.ts`), filtered to US
+  intern, new-grad and early-career titles. No AI needed.
+- **Community GitHub boards**: SimplifyJobs (internships, off-season, new
+  grad), speedyapply (SWE and AI, with FAANG+/Quant sections and pay) and
+  vanshb03 / CSCareers README tables, parsed directly. Rows older than 90 days
+  or marked closed are skipped. No AI needed.
 - **Hacker News "Who is hiring"**: the current month's thread, with Claude
   extracting structured roles from freeform comments. Only runs when
   `ANTHROPIC_API_KEY` is set.
 
-New rows are upserted into `opportunities` (deduped by URL), which members see
-in the Opportunities tab.
+The same role often appears on several boards, so candidates are deduped by
+URL and by company + title + city (careers pages win, and duplicates donate
+their pay and category tags). New rows are inserted into `opportunities`,
+with `posted_at` taken from the source when it has one.
+
+**Top picks**: rows from high-paying, high-clout employers (big tech, top
+startups and AI labs, quant and elite finance) get a `top-pick` tag. The list
+lives in `src/lib/jobs/tiers.ts`; the portal also checks it by company name,
+so editing the list re-tiers existing rows on the next page load. Members
+switch between "Top picks" and "All openings" on the Opportunities tab.
 
 Scheduling: a daily Vercel cron defined in `vercel.json` calls the endpoint in
 production; Vercel authenticates the request with `CRON_SECRET` as a Bearer
