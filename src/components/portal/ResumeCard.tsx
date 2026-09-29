@@ -101,6 +101,35 @@ export default function ResumeCard({ school }: { school: string }) {
     }
   }
 
+  // View fetches the file and opens it from a same-origin blob URL, so the
+  // storage host never shows up and there is no signed link to expire. The
+  // tab opens before the await so popup blockers treat it as a user click.
+  async function handleView() {
+    if (!store || !resume) return;
+    setError(null);
+    const isPdf = resume.name.toLowerCase().endsWith('.pdf');
+    const tab = isPdf ? window.open('', '_blank') : null;
+    try {
+      const blob = await store.downloadResume();
+      const url = URL.createObjectURL(
+        isPdf ? new Blob([blob], { type: 'application/pdf' }) : blob,
+      );
+      if (tab) {
+        tab.location.href = url;
+      } else {
+        // Word files cannot render in a tab: save them under their real name.
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = resume.name;
+        a.click();
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      tab?.close();
+      setError((err as { message?: string })?.message || 'Could not open it. Try again.');
+    }
+  }
+
   async function handleRemove() {
     if (!store) return;
     setError(null);
@@ -185,15 +214,10 @@ export default function ResumeCard({ school }: { school: string }) {
             </div>
           ) : (
             <div className="flex flex-wrap items-center gap-2">
-              {resume.url && (
-                <a
-                  className="portal-btn-ghost"
-                  href={resume.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
+              {resume.viewable && (
+                <button type="button" className="portal-btn-ghost" onClick={handleView}>
                   View
-                </a>
+                </button>
               )}
               <button
                 type="button"

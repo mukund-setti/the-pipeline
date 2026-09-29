@@ -59,11 +59,11 @@ export type ForumReply = {
 
 export type OpportunityKind = 'internship' | 'new-grad' | 'program';
 
-/** A member's stored resume. url is a short-lived signed link (null in demo). */
+/** A member's stored resume. viewable is false in demo (no file is kept). */
 export type ResumeInfo = {
   name: string;
   updatedAt: string;
-  url: string | null;
+  viewable: boolean;
 };
 
 /** Per-member marks on a job: saved (flagged to revisit) and applied. */
@@ -161,6 +161,8 @@ export type ParsedPosting = {
   warnings: string[];
   /** Set when the link was a redirect (e.g. Simplify): the employer's real application page. */
   applyUrl?: string;
+  /** False when the link is not one job posting (careers home page, closed job...); warnings[0] says why. */
+  isPosting?: boolean;
 };
 
 /**

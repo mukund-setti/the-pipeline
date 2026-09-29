@@ -48,6 +48,8 @@ export interface PortalStore {
   /** The member's stored resume, or null when none is on file. */
   getResume(): Promise<ResumeInfo | null>;
   uploadResume(file: File): Promise<ResumeInfo>;
+  /** The stored file itself, fetched on demand so no storage URL is exposed. */
+  downloadResume(): Promise<Blob>;
   removeResume(): Promise<void>;
   /** Saved/applied marks keyed by opportunity id. */
   listActions(): Promise<JobActionMap>;
@@ -375,7 +377,7 @@ function cleanAppInput(input: ApplicationInput): ApplicationInput {
 function appError(error: { code?: string; message?: string }): Error {
   // PGRST205 / 42P01: the applications table has not been created yet.
   if (error.code === 'PGRST205' || error.code === '42P01' || /applications/.test(error.message || '') && /schema cache|does not exist/.test(error.message || '')) {
-    return new Error('The tracker is not set up in the database yet. Ask a portal admin to run supabase/schema.sql.');
+    return new Error('The Career Portal is not set up in the database yet. Ask a portal admin to run supabase/schema.sql.');
   }
   return new Error(error.message || 'That did not save. Try again.');
 }
@@ -523,13 +525,10 @@ class SupabaseStore implements PortalStore {
     if (error) throw error;
     const file = files?.[0];
     if (!file) return null;
-    const { data: signed } = await this.supa.storage
-      .from('resumes')
-      .createSignedUrl(`${this.user.id}/${file.name}`, 600);
     return {
       name: file.name,
       updatedAt: (file as any).updated_at || (file as any).created_at || '',
-      url: signed?.signedUrl ?? null,
+      viewable: true,
     };
   }
 
@@ -552,8 +551,21 @@ class SupabaseStore implements PortalStore {
       .from('resumes')
       .upload(path, file, { upsert: true, contentType: file.type || undefined });
     if (error) throw error;
-    const { data: signed } = await this.supa.storage.from('resumes').createSignedUrl(path, 600);
-    return { name: safeName, updatedAt: new Date().toISOString(), url: signed?.signedUrl ?? null };
+    return { name: safeName, updatedAt: new Date().toISOString(), viewable: true };
+  }
+
+  async downloadResume(): Promise<Blob> {
+    const { data: files, error } = await this.supa.storage
+      .from('resumes')
+      .list(this.user.id, { sortBy: { column: 'created_at', order: 'desc' } });
+    if (error) throw error;
+    const file = files?.[0];
+    if (!file) throw new Error('No resume on file.');
+    const { data, error: dlErr } = await this.supa.storage
+      .from('resumes')
+      .download(`${this.user.id}/${file.name}`);
+    if (dlErr) throw dlErr;
+    return data;
   }
 
   async removeResume(): Promise<void> {
@@ -793,14 +805,18 @@ class DemoStore implements PortalStore {
 
   async getResume(): Promise<ResumeInfo | null> {
     const r = this.data.resume;
-    return r ? { ...r, url: null } : null;
+    return r ? { ...r, viewable: false } : null;
   }
 
   async uploadResume(file: File): Promise<ResumeInfo> {
     const info = { name: file.name, updatedAt: new Date().toISOString() };
     this.data.resume = info;
     this.save(this.data);
-    return { ...info, url: null };
+    return { ...info, viewable: false };
+  }
+
+  async downloadResume(): Promise<Blob> {
+    throw new Error('Demo sessions do not store the file.');
   }
 
   async removeResume(): Promise<void> {
