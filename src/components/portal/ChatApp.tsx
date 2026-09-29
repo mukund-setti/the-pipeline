@@ -12,6 +12,7 @@ import type { Channel, ChatMessage } from '../../lib/portal/types';
 import { channelsForSchool } from '../../lib/portal/types';
 import { waitForPortalUser, initPortalData } from '../../lib/portal/data';
 import type { PortalData } from '../../lib/portal/data';
+import { UserFacingError } from '../../lib/portal/moderation';
 import { schoolBySlug } from '../../lib/schools';
 
 const MAX_LEN = 4000;
@@ -303,8 +304,12 @@ export default function ChatApp({ school }: { school: string }) {
         if (el) el.scrollTop = el.scrollHeight;
         setShowJump(false);
       });
-    } catch {
-      setSendError('Your message did not send. Check your connection and try again.');
+    } catch (err) {
+      setSendError(
+        err instanceof UserFacingError
+          ? err.message
+          : 'Your message did not send. Check your connection and try again.'
+      );
       setDraft(restore);
     } finally {
       setSending(false);

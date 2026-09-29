@@ -9,6 +9,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, FormEvent } from 'react';
 import { initPortalData, waitForPortalUser } from '../../lib/portal/data';
 import type { PortalData } from '../../lib/portal/data';
+import { UserFacingError } from '../../lib/portal/moderation';
 import type { ForumPost, ForumReply } from '../../lib/portal/types';
 
 type Props = {
@@ -238,8 +239,10 @@ export default function ForumApp({ school }: Props) {
       setDraftTags('');
       setDraftHint(null);
       openPost(post);
-    } catch {
-      setDraftHint('Could not publish right now. Try again in a moment.');
+    } catch (err) {
+      setDraftHint(
+        err instanceof UserFacingError ? err.message : 'Could not publish right now. Try again in a moment.'
+      );
     } finally {
       setPosting(false);
     }
@@ -262,8 +265,10 @@ export default function ForumApp({ school }: Props) {
       );
       setReplyBody('');
       setReplyHint(null);
-    } catch {
-      setReplyHint('Could not send that reply. Try again in a moment.');
+    } catch (err) {
+      setReplyHint(
+        err instanceof UserFacingError ? err.message : 'Could not send that reply. Try again in a moment.'
+      );
     } finally {
       setReplying(false);
     }

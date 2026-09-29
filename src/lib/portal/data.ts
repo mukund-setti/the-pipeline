@@ -29,6 +29,7 @@ import type {
   ResumeInfo,
 } from './types';
 import { channelsForSchool } from './types';
+import { assertPostable, UserFacingError } from './moderation';
 
 const DEMO_SESSION_KEY = 'pipeline-portal-demo';
 const DEMO_DATA_KEY = 'pipeline-portal-demo-data-v2';
@@ -391,6 +392,15 @@ function appToRow(input: ApplicationInput): Record<string, unknown> {
   return row;
 }
 
+/**
+ * Guardrail triggers (supabase/guardrails.sql) raise with hint 'portal' and
+ * a message written for the member; pass those through as is.
+ */
+function postError(error: { hint?: string; message?: string }): Error {
+  if (error.hint === 'portal' && error.message) return new UserFacingError(error.message);
+  return error as Error;
+}
+
 class SupabaseStore implements PortalStore {
   live = true;
   constructor(private user: PortalUser, private supa: Supa) {}
@@ -407,6 +417,7 @@ class SupabaseStore implements PortalStore {
   }
 
   async sendMessage(channel: string, body: string): Promise<ChatMessage> {
+    assertPostable(body);
     const { data, error } = await this.supa
       .from('messages')
       .insert({
@@ -418,7 +429,7 @@ class SupabaseStore implements PortalStore {
       })
       .select()
       .single();
-    if (error) throw error;
+    if (error) throw postError(error);
     return msgFromRow(data);
   }
 
@@ -462,6 +473,7 @@ class SupabaseStore implements PortalStore {
   }
 
   async createPost(title: string, body: string, tags: string[]): Promise<ForumPost> {
+    assertPostable(title, body, tags.join(' '));
     const { data, error } = await this.supa
       .from('forum_posts')
       .insert({
@@ -474,11 +486,12 @@ class SupabaseStore implements PortalStore {
       })
       .select()
       .single();
-    if (error) throw error;
+    if (error) throw postError(error);
     return { ...postFromRow(data), replyCount: 0 };
   }
 
   async addReply(postId: string, body: string): Promise<ForumReply> {
+    assertPostable(body);
     const { data, error } = await this.supa
       .from('forum_replies')
       .insert({
@@ -490,18 +503,25 @@ class SupabaseStore implements PortalStore {
       })
       .select()
       .single();
-    if (error) throw error;
+    if (error) throw postError(error);
     return replyFromRow(data);
   }
 
   async listOpportunities(): Promise<Opportunity[]> {
-    const { data, error } = await this.supa
-      .from('opportunities')
-      .select('*')
-      .order('posted_at', { ascending: false })
-      .limit(120);
-    if (error) throw error;
-    const rows = (data ?? []).map(oppFromRow);
+    // The scanner keeps thousands of rows; PostgREST caps each response at
+    // 1000, so page through the newest few thousand.
+    const rows: Opportunity[] = [];
+    for (let from = 0; from < 6000; from += 1000) {
+      const { data, error } = await this.supa
+        .from('opportunities')
+        .select('*')
+        .order('posted_at', { ascending: false })
+        .order('id') // tiebreak so pages never overlap within one batch
+        .range(from, from + 999);
+      if (error) throw error;
+      rows.push(...(data ?? []).map(oppFromRow));
+      if (!data || data.length < 1000) break;
+    }
     // An empty live table reads as "broken" to a new member; show samples
     // until the scanner has run once, but labeled and back-dated so nothing
     // fabricated wears a "New" chip or a real source name.
@@ -714,6 +734,7 @@ class DemoStore implements PortalStore {
   }
 
   async sendMessage(channel: string, body: string): Promise<ChatMessage> {
+    assertPostable(body);
     const msg: ChatMessage = {
       id: uid(),
       channel,
@@ -753,6 +774,7 @@ class DemoStore implements PortalStore {
   }
 
   async createPost(title: string, body: string, tags: string[]): Promise<ForumPost> {
+    assertPostable(title, body, tags.join(' '));
     const post: ForumPost = {
       id: uid(),
       userId: this.user.id,
@@ -770,6 +792,7 @@ class DemoStore implements PortalStore {
   }
 
   async addReply(postId: string, body: string): Promise<ForumReply> {
+    assertPostable(body);
     const reply: ForumReply = {
       id: uid(),
       postId,
