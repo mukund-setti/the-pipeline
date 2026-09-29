@@ -518,17 +518,6 @@
 .trk-link:hover { text-decoration: underline; }
 .trk-link:disabled { opacity: 0.6; cursor: default; text-decoration: none; }
 
-.trk-facts { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 0 0 12px; }
-.trk-facts div { display: flex; gap: 6px; align-items: baseline; font-size: 0.84rem; }
-.trk-facts dt {
-  font-size: 0.64rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: theme(colors.ink.soft);
-}
-.trk-facts dd { margin: 0; font-weight: 600; color: theme(colors.ink.DEFAULT); }
-
 .trk-sec { border-top: 1px solid theme(colors.line.DEFAULT); padding: 8px 0; }
 .trk-sec summary {
   display: flex;

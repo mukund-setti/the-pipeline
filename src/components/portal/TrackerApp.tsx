@@ -145,8 +145,6 @@ function prepText(a: Application): string {
     a.url,
     [a.location, a.workMode, a.salary].filter(Boolean).join(' · '),
   ];
-  const facts = [a.level, a.experience, a.team, a.employmentType].filter(Boolean).join(' · ');
-  if (facts) lines.push(facts);
   if (a.skills.length) lines.push('', 'SKILLS: ' + a.skills.join(', '));
   for (const [k, label] of SECTION_ORDER) {
     const items = a.sections[k];
@@ -1104,29 +1102,9 @@ function PrepSheet({
       </p>
     );
   }
-  const facts = (
-    [
-      ['Level', a.level],
-      ['Experience', a.experience],
-      ['Team', a.team],
-      ['Type', a.employmentType],
-      ['Posted', a.postedAt ? fmtDay(a.postedAt) : ''],
-      ['Ref', a.jobRef],
-    ] as [string, string][]
-  ).filter(([, v]) => v);
   const secs = SECTION_ORDER.filter(([k]) => a.sections[k]?.length);
   return (
     <div>
-      {facts.length > 0 && (
-        <dl className="trk-facts">
-          {facts.map(([k, v]) => (
-            <div key={k}>
-              <dt>{k}</dt>
-              <dd>{v}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
       {a.skills.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-1.5">
           {a.skills.map((s) => (
