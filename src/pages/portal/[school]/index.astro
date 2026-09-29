@@ -1,9 +1,9 @@
 ---
 /**
  * Portal home: the chapter's landing pane. A static welcome band, the resume
- * drop island, quick links into the three portal surfaces, and the standing
- * weekly rhythm. The member's first name is filled in by a tiny script once
- * the shell's auth guard resolves.
+ * drop island, quick links into the portal surfaces, and a placeholder for
+ * the weekly schedule (coming soon). The member's first name is filled in
+ * by a tiny script once the shell's auth guard resolves.
  */
 import PortalShell from '../../../components/portal/PortalShell.astro';
 import ResumeCard from '../../../components/portal/ResumeCard';
@@ -43,11 +43,6 @@ const quickNav = [
   },
 ] as const;
 
-const week = [
-  { icon: 'clock', label: 'Office hours over Discord and Meet', when: 'Thu · 6:00 PM' },
-  { icon: 'doc', label: 'Resume review thread open in #resume-review', when: 'Open now' },
-  { icon: 'people', label: 'Mock interview round-robin', when: 'Saturday' },
-] as const;
 ---
 
 <PortalShell school={school} active="home" title="Home">
@@ -128,52 +123,11 @@ const week = [
     <section class="portal-card mt-6 p-6 md:p-7">
       <div class="flex flex-wrap items-baseline justify-between gap-2">
         <h3 class="font-display text-h3-lg font-semibold text-ink">This week in the pipeline</h3>
-        <span class="portal-chip portal-chip--gold">Standing rhythm</span>
+        <span class="portal-chip portal-chip--gold">Coming soon</span>
       </div>
-      <ul class="mt-4 divide-y divide-line">
-        {
-          week.map((row) => (
-            <li class="flex items-center gap-3.5 py-3.5">
-              <span class="flex h-8 w-8 flex-none items-center justify-center rounded-field bg-[color:var(--school-soft)] text-[color:var(--school-deep)]">
-                <svg
-                  class="h-4 w-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  {row.icon === 'clock' && (
-                    <>
-                      <circle cx="12" cy="12" r="9" />
-                      <path d="M12 7v5l3 2" />
-                    </>
-                  )}
-                  {row.icon === 'doc' && (
-                    <>
-                      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
-                      <path d="M14 3v5h5M9 13h6M9 17h4" />
-                    </>
-                  )}
-                  {row.icon === 'people' && (
-                    <>
-                      <circle cx="9" cy="8" r="3.5" />
-                      <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />
-                      <path d="M16 5.5a3.5 3.5 0 0 1 0 6M21 20c0-2.6-1.7-4.9-4-5.7" />
-                    </>
-                  )}
-                </svg>
-              </span>
-              <span class="min-w-0 flex-1 text-[0.92rem] text-ink">{row.label}</span>
-              <span class="label flex-none text-[0.64rem] text-ink-soft">{row.when}</span>
-            </li>
-          ))
-        }
-      </ul>
-      <p class="border-t border-line pt-3.5 text-[0.8rem] text-ink-soft">
-        The full schedule lives in the Discord; these are the standing ones.
+      <p class="mt-3 max-w-[56ch] text-[0.92rem] leading-relaxed text-ink-soft">
+        Office hours, resume reviews and mock interviews will show up here once the schedule is set. Until
+        then, keep an eye on the Discord for announcements.
       </p>
     </section>
 
