@@ -1,0 +1,30 @@
+---
+/**
+ * Old address of the Applications page. Forwards to /applications/ so
+ * bookmarks and links from before the rename keep working. A real page (not
+ * a config redirect) so both /tracker and /tracker/ are covered.
+ */
+import { PORTAL_SCHOOLS } from '../../../lib/schools';
+
+export function getStaticPaths() {
+  return PORTAL_SCHOOLS.map((s) => ({ params: { school: s.slug } }));
+}
+
+const target = `/portal/${Astro.params.school}/applications/`;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="robots" content="noindex" />
+    <meta http-equiv="refresh" content={`0; url=${target}`} />
+    <link rel="canonical" href={target} />
+    <title>Applications · Pipeline</title>
+    <script is:inline define:vars={{ target }}>
+      location.replace(target + location.search + location.hash);
+    </script>
+  </head>
+  <body>
+    <a href={target}>Go to Applications</a>
+  </body>
+</html>

@@ -1,6 +1,6 @@
 ---
 /**
- * Application tracker: each member's private list of postings they are
+ * Applications: each member's private list of postings they are
  * working, with a stage rail, notes, prep sheet and history. See
  * TrackerApp.tsx and the `applications` table in supabase/schema.sql.
  */
@@ -14,6 +14,6 @@ export function getStaticPaths() {
 
 const school = schoolBySlug(Astro.params.school as string)!;
 ---
-<PortalShell school={school} active="tracker" title="Tracker">
+<PortalShell school={school} active="tracker" title="Applications">
   <TrackerApp client:only="react" school={school.slug} />
 </PortalShell>

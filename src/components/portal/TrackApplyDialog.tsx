@@ -76,6 +76,10 @@ export default function TrackApplyDialog({
       .then((r) => {
         if (readingFor.current !== url) return;
         setParsed(r);
+        if (r.isPosting === false) {
+          setStatus({ text: r.warnings?.[0] || 'That link is not a job posting.', kind: 'warn' });
+          return;
+        }
         setForm((f) => {
           if (!f) return f;
           const next = { ...f };
@@ -85,7 +89,7 @@ export default function TrackApplyDialog({
         const gotBody = (r.description || '').length > 200;
         setStatus(
           gotBody && r.title
-            ? { text: 'Filled in from the posting. Check it and add to your tracker.', kind: 'ok' }
+            ? { text: 'Filled in from the posting. Check it and add it to your applications.', kind: 'ok' }
             : {
                 text: `That page did not show a job posting. Open the job on the company's own careers site and paste that link here.`,
                 kind: 'warn',
@@ -163,7 +167,7 @@ export default function TrackApplyDialog({
       {opportunity && form && (
         <form onSubmit={submit}>
           <header className="mb-4">
-            <h2 className="font-display text-[1.2rem] font-semibold text-ink">Add to your tracker</h2>
+            <h2 className="font-display text-[1.2rem] font-semibold text-ink">Add to your applications</h2>
           </header>
 
           <label className="flex flex-col gap-1.5 text-[0.78rem] font-semibold text-ink-soft">
@@ -242,7 +246,7 @@ export default function TrackApplyDialog({
               Cancel
             </button>
             <button type="submit" className="portal-btn-primary" disabled={saving}>
-              {saving ? 'Adding…' : 'Add to tracker'}
+              {saving ? 'Adding…' : 'Add to applications'}
             </button>
           </footer>
         </form>

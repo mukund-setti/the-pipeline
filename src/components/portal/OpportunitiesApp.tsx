@@ -293,12 +293,12 @@ export default function OpportunitiesApp({ school }: { school: string }) {
       try {
         const saved = await store.updateApplication(existing.id, { stage: 'applied' });
         setTracked((prev) => prev.map((a) => (a.id === saved.id ? saved : a)));
-        showTrackedNote(`${o.company} moved to Applied in your Tracker.`);
+        showTrackedNote(`${o.company} moved to Applied in your applications.`);
       } catch {
-        showActionNote('Marked applied, but your Tracker did not update. Try again there.');
+        showActionNote('Marked applied, but your applications list did not update. Try again there.');
       }
     } else {
-      showTrackedNote(`${o.company} is already in your Tracker.`);
+      showTrackedNote(`${o.company} is already in your applications.`);
     }
   };
 
@@ -307,7 +307,7 @@ export default function OpportunitiesApp({ school }: { school: string }) {
     setPendingApply(null);
     setTracked((prev) => [app, ...prev]);
     if (o) setMark(o.id, 'applied', true);
-    showTrackedNote(`Added ${app.company || 'it'} to your Tracker.`);
+    showTrackedNote(`Added ${app.company || 'it'} to your applications.`);
   };
 
   const askAi = async () => {
@@ -579,8 +579,8 @@ export default function OpportunitiesApp({ school }: { school: string }) {
       {trackedNote && (
         <p className="mb-3 text-[0.8rem] font-medium text-ink" role="status">
           {trackedNote}{' '}
-          <a href={`/portal/${school}/tracker/`} className="font-semibold text-gold-deep hover:underline">
-            Open Tracker &rarr;
+          <a href={`/portal/${school}/applications/`} className="font-semibold text-gold-deep hover:underline">
+            Open Applications &rarr;
           </a>
         </p>
       )}

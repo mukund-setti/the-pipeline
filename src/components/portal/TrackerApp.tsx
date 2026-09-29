@@ -210,7 +210,7 @@ export default function TrackerApp({ school }: { school: string }) {
       } catch {
         if (!cancelled) {
           setLoadError(
-            'Your Career Portal could not load. If this keeps happening, the applications table may not be set up yet.'
+            'Your applications could not load. If this keeps happening, the applications table may not be set up yet.'
           );
         }
       }

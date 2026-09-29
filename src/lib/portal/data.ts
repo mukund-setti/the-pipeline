@@ -377,7 +377,7 @@ function cleanAppInput(input: ApplicationInput): ApplicationInput {
 function appError(error: { code?: string; message?: string }): Error {
   // PGRST205 / 42P01: the applications table has not been created yet.
   if (error.code === 'PGRST205' || error.code === '42P01' || /applications/.test(error.message || '') && /schema cache|does not exist/.test(error.message || '')) {
-    return new Error('The Career Portal is not set up in the database yet. Ask a portal admin to run supabase/schema.sql.');
+    return new Error('Applications are not set up in the database yet. Ask a portal admin to run supabase/schema.sql.');
   }
   return new Error(error.message || 'That did not save. Try again.');
 }
