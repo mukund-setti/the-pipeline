@@ -18,6 +18,8 @@ The parts:
 
 - **Opportunities**: an AI-tracked feed of internships, new grad roles, and
   programs, refreshed daily by the scanner (section 5).
+- **Tracker**: each member's private application tracker. Paste a posting
+  link, track the stage, keep notes and a prep sheet (section 9).
 - **Forum**: national writeups, questions, and resume threads. Every chapter
   reads and posts in one shared space.
 - **Chat**: the national room, one private room per chapter, and shared topic
@@ -223,6 +225,53 @@ another member's saved or applied list.
 In demo mode (`?demo=<school>`), resume metadata and marks live in
 `localStorage` only, and sample rows (ids starting with `seed-`) cannot be
 marked.
+
+### The application tracker
+
+`/portal/<school>/tracker/` is a per-member port of the standalone
+JobTracker app. Each member pastes a posting link, checks the details the
+page reader found, and saves. Every row then has:
+
+- a stage rail (Saved, Applied, Screen, Interview, Offer) and a separate
+  outcome (Rejected, Withdrawn, Accepted), so a closed row still shows how far
+  it got;
+- notes that save when the member clicks away;
+- a prep sheet built from the posting (responsibilities, requirements, nice to
+  have, benefits, detected skills and level) with Copy and Refresh;
+- a status history, plus a "no word in N days" nudge after 10 days in Applied;
+- search, stage filters, sorting and CSV export.
+
+Storage is the `applications` table in `supabase/schema.sql`. RLS scopes every
+read and write to the member's own `user_id`; nobody can see another
+member's tracker. The `applications_touch` trigger owns `history`,
+`applied_at` (stamped the first time a row leaves Saved) and the timestamps,
+so the client cannot rewrite its own timeline.
+
+Links are read by `POST /api/parse-job`, which runs the parser in
+`src/lib/jobs/parse.js` (Workday, Greenhouse including company-domain
+`?gh_jid=` pages, Lever, Ashby, SmartRecruiters, Oracle Cloud, LinkedIn,
+Avature and Simplify adapters, then schema.org, Open Graph and the page
+title). A pasted Simplify link is resolved to the employer's real application
+page, and that is the link the tracker stores. It
+requires a verified member token, like the AI search endpoint, and refuses
+bare IPs and internal hostnames so it cannot be used as an open fetch proxy.
+It stores nothing; the browser saves the result into the member's own row.
+Sites behind a login or bot wall may come back mostly empty, and the member
+fills in the rest by hand.
+
+Marking an Opportunities row applied opens an "Add to your tracker" pop-up,
+pre-filled from the feed row, which reads the posting in the background for
+pay and the prep sheet. Saving it creates the Tracker row at Applied and then
+sets the applied mark; Cancel leaves the row unmarked. A role already in the
+Tracker (same link) skips the pop-up: it is marked, and moved to Applied if
+it was still Saved there.
+
+In demo mode, tracker rows live in `localStorage`. On the local dev server
+links are still read (the parse endpoint skips its member check in dev), and
+the Opportunities feed loads the real newest rows through the dev-only
+`/api/dev-feed` endpoint, which reads with the service role key from `.env`.
+Both are disabled in production builds. Outside dev, the demo shows sample
+rows, which link to general careers pages and have no posting to read.
 
 ## 10. AI search and Discord drop alerts
 

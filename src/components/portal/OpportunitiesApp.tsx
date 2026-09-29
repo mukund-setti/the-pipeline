@@ -8,9 +8,15 @@
  * returns a structured filter layer. When that endpoint is unavailable (demo
  * session, missing key, network trouble) the same query is parsed locally so
  * the button always does something.
+ *
+ * Marking a row applied opens TrackApplyDialog so the role also lands in the
+ * member's Tracker (/portal/<school>/tracker) at the Applied stage. A role
+ * already in the Tracker is just marked, and moved to Applied if it was
+ * still Saved there.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type {
+  Application,
   JobAction,
   JobActionMap,
   Opportunity,
@@ -20,6 +26,8 @@ import type {
 import { waitForPortalUser, initPortalData } from '../../lib/portal/data';
 import type { PortalStore } from '../../lib/portal/data';
 import { getSupabase } from '../../lib/supabase';
+import { normUrl } from '../../lib/portal/tracker';
+import TrackApplyDialog from './TrackApplyDialog';
 
 type KindFilter = 'all' | OpportunityKind;
 
@@ -198,8 +206,14 @@ export default function OpportunitiesApp({ school }: { school: string }) {
   const [resume, setResume] = useState<ResumeInfo | null | undefined>(undefined);
   const [aiFilter, setAiFilter] = useState<AiFilter | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  /** The member's Tracker rows, used to avoid adding a role twice. */
+  const [tracked, setTracked] = useState<Application[]>([]);
+  /** The row whose "Mark applied" opened the Add to tracker dialog. */
+  const [pendingApply, setPendingApply] = useState<Opportunity | null>(null);
+  const [trackedNote, setTrackedNote] = useState<string | null>(null);
   const storeRef = useRef<PortalStore | null>(null);
   const noteTimer = useRef<number | undefined>(undefined);
+  const trackedTimer = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     let cancelled = false;
@@ -211,20 +225,23 @@ export default function OpportunitiesApp({ school }: { school: string }) {
         window.dispatchEvent(new CustomEvent('portal:notice'));
       }
       storeRef.current = portal.store;
-      const [rows, marks, resumeInfo] = await Promise.all([
+      const [rows, marks, resumeInfo, apps] = await Promise.all([
         portal.store.listOpportunities(),
         portal.store.listActions().catch(() => ({}) as JobActionMap),
         portal.store.getResume().catch(() => null),
+        portal.store.listApplications().catch(() => [] as Application[]),
       ]);
       if (cancelled) return;
       setOpportunities(rows);
       setActions(marks);
       setResume(resumeInfo);
+      setTracked(apps);
       setLoading(false);
     })();
     return () => {
       cancelled = true;
       window.clearTimeout(noteTimer.current);
+      window.clearTimeout(trackedTimer.current);
     };
   }, [school]);
 
@@ -244,6 +261,53 @@ export default function OpportunitiesApp({ school }: { school: string }) {
       setActions((prev) => withMark(prev, id, action, !on));
       showActionNote('That mark did not save. Check your connection and try again.');
     });
+  };
+
+  const showTrackedNote = (msg: string) => {
+    setTrackedNote(msg);
+    window.clearTimeout(trackedTimer.current);
+    trackedTimer.current = window.setTimeout(() => setTrackedNote(null), 6000);
+  };
+
+  /** Set a mark to a known state (toggleAction flips whatever is there). */
+  const setMark = (id: string, action: JobAction, on: boolean) => {
+    if (!!actions[id]?.[action] === on) return;
+    toggleAction(id, action);
+  };
+
+  /**
+   * "Mark applied": a role already in the Tracker is just marked (and moved
+   * to Applied if it was still Saved there); anything else opens the Add to
+   * tracker dialog, and the mark is set once the Tracker row is saved.
+   */
+  const startApply = async (o: Opportunity) => {
+    const store = storeRef.current;
+    if (!store) return;
+    const existing = tracked.find((a) => normUrl(a.url) === normUrl(o.url));
+    if (!existing) {
+      setPendingApply(o);
+      return;
+    }
+    setMark(o.id, 'applied', true);
+    if (existing.stage === 'saved' && !existing.outcome) {
+      try {
+        const saved = await store.updateApplication(existing.id, { stage: 'applied' });
+        setTracked((prev) => prev.map((a) => (a.id === saved.id ? saved : a)));
+        showTrackedNote(`${o.company} moved to Applied in your Tracker.`);
+      } catch {
+        showActionNote('Marked applied, but your Tracker did not update. Try again there.');
+      }
+    } else {
+      showTrackedNote(`${o.company} is already in your Tracker.`);
+    }
+  };
+
+  const onTrackedSaved = (app: Application) => {
+    const o = pendingApply;
+    setPendingApply(null);
+    setTracked((prev) => [app, ...prev]);
+    if (o) setMark(o.id, 'applied', true);
+    showTrackedNote(`Added ${app.company || 'it'} to your Tracker.`);
   };
 
   const askAi = async () => {
@@ -511,6 +575,16 @@ export default function OpportunitiesApp({ school }: { school: string }) {
         </p>
       )}
 
+      {/* Confirmation after a role is added to (or found in) the Tracker. */}
+      {trackedNote && (
+        <p className="mb-3 text-[0.8rem] font-medium text-ink" role="status">
+          {trackedNote}{' '}
+          <a href={`/portal/${school}/tracker/`} className="font-semibold text-gold-deep hover:underline">
+            Open Tracker &rarr;
+          </a>
+        </p>
+      )}
+
       {/* List. */}
       {loading ? (
         <div className="flex flex-col gap-3" aria-hidden="true">
@@ -633,7 +707,7 @@ export default function OpportunitiesApp({ school }: { school: string }) {
                       ) : (
                         <button
                           type="button"
-                          onClick={() => toggleAction(o.id, 'applied')}
+                          onClick={() => startApply(o)}
                           aria-pressed={false}
                           className="inline-flex items-center rounded-pill border border-line px-3 py-1.5 text-[0.74rem] font-semibold text-ink-soft transition-colors hover:border-line-strong hover:text-ink"
                         >
@@ -667,6 +741,13 @@ export default function OpportunitiesApp({ school }: { school: string }) {
           })}
         </ul>
       )}
+
+      <TrackApplyDialog
+        opportunity={pendingApply}
+        store={storeRef.current}
+        onSaved={onTrackedSaved}
+        onCancel={() => setPendingApply(null)}
+      />
     </div>
   );
 }

@@ -84,6 +84,85 @@ export type Opportunity = {
   postedAt: string;
 };
 
+/* --------------------------- application tracker ------------------------- */
+
+/** Where a member is in the process. Outcome is tracked separately. */
+export type AppStage = 'saved' | 'applied' | 'screen' | 'interview' | 'offer';
+/** How it ended; '' means still open. Kept apart from stage so the rail
+ *  still shows how far the member got. */
+export type AppOutcome = '' | 'rejected' | 'withdrawn' | 'accepted';
+export type WorkMode = '' | 'Remote' | 'Hybrid' | 'On-site';
+
+/** Prep-sheet buckets parsed out of the posting body. */
+export type PrepSections = Partial<
+  Record<'responsibilities' | 'requirements' | 'niceToHave' | 'benefits' | 'about', string[]>
+>;
+
+/** One posting in a member's personal tracker. Private to that member. */
+export type Application = {
+  id: string;
+  url: string;
+  host: string;
+  company: string;
+  title: string;
+  location: string;
+  salary: string;
+  workMode: WorkMode;
+  employmentType: string;
+  /** YYYY-MM-DD or ''. */
+  postedAt: string;
+  /** YYYY-MM-DD or ''. Stamped automatically the first time it leaves Saved. */
+  appliedAt: string;
+  stage: AppStage;
+  outcome: AppOutcome;
+  notes: string;
+  description: string;
+  sections: PrepSections;
+  skills: string[];
+  /** Which reader filled the details, e.g. "Greenhouse" or "page". */
+  source: string;
+  team: string;
+  level: string;
+  experience: string;
+  jobRef: string;
+  /** ISO timestamp of the last posting read, '' when never read. */
+  parsedAt: string;
+  parseWarning: string;
+  /** Status changes, oldest first. Written by the database, not the client. */
+  history: { status: AppStage | Exclude<AppOutcome, ''>; at: string }[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** Fields a member (or the posting reader) may write. */
+export type ApplicationInput = Partial<
+  Omit<Application, 'id' | 'history' | 'createdAt' | 'updatedAt'>
+> & { url?: string };
+
+/** What /api/parse-job returns for a link. */
+export type ParsedPosting = {
+  url: string;
+  host: string;
+  source: string;
+  title: string;
+  company: string;
+  location: string;
+  salary: string;
+  workMode: WorkMode;
+  employmentType: string;
+  postedAt: string;
+  team: string;
+  level: string;
+  experience: string;
+  jobRef?: string;
+  description: string;
+  sections: PrepSections;
+  skills: string[];
+  warnings: string[];
+  /** Set when the link was a redirect (e.g. Simplify): the employer's real application page. */
+  applyUrl?: string;
+};
+
 /**
  * Channel roster for a chapter's sidebar and for seeding. Slugs must match
  * the rows seeded by supabase/schema.sql.

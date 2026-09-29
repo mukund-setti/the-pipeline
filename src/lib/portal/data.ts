@@ -14,6 +14,10 @@ import { getSupabase } from '../supabase';
 import { schoolForEmail, schoolBySlug, PORTAL_SCHOOLS } from '../schools';
 import type { PortalSchoolSlug } from '../schools';
 import type {
+  Application,
+  ApplicationInput,
+  AppOutcome,
+  AppStage,
   Channel,
   ChatMessage,
   ForumPost,
@@ -48,6 +52,11 @@ export interface PortalStore {
   /** Saved/applied marks keyed by opportunity id. */
   listActions(): Promise<JobActionMap>;
   setAction(opportunityId: string, action: JobAction, on: boolean): Promise<void>;
+  /** The member's own application tracker, newest first. */
+  listApplications(): Promise<Application[]>;
+  createApplication(input: ApplicationInput): Promise<Application>;
+  updateApplication(id: string, patch: ApplicationInput): Promise<Application>;
+  deleteApplication(id: string): Promise<void>;
 }
 
 export type PortalData = {
@@ -251,6 +260,125 @@ const oppFromRow = (r: any): Opportunity => ({
   deadline: r.deadline,
   postedAt: r.posted_at,
 });
+
+const appFromRow = (r: any): Application => ({
+  id: r.id,
+  url: r.url,
+  host: r.host ?? '',
+  company: r.company ?? '',
+  title: r.title ?? '',
+  location: r.location ?? '',
+  salary: r.salary ?? '',
+  workMode: r.work_mode ?? '',
+  employmentType: r.employment_type ?? '',
+  postedAt: r.posted_at ?? '',
+  appliedAt: r.applied_at ?? '',
+  stage: r.stage,
+  outcome: r.outcome ?? '',
+  notes: r.notes ?? '',
+  description: r.description ?? '',
+  sections: r.sections ?? {},
+  skills: r.skills ?? [],
+  source: r.source ?? '',
+  team: r.team ?? '',
+  level: r.level ?? '',
+  experience: r.experience ?? '',
+  jobRef: r.job_ref ?? '',
+  parsedAt: r.parsed_at ?? '',
+  parseWarning: r.parse_warning ?? '',
+  history: Array.isArray(r.history) ? r.history : [],
+  createdAt: r.created_at,
+  updatedAt: r.updated_at,
+});
+
+/** camelCase input keys to snake_case columns. */
+const APP_COLUMNS: Record<keyof ApplicationInput, string> = {
+  url: 'url',
+  host: 'host',
+  company: 'company',
+  title: 'title',
+  location: 'location',
+  salary: 'salary',
+  workMode: 'work_mode',
+  employmentType: 'employment_type',
+  postedAt: 'posted_at',
+  appliedAt: 'applied_at',
+  stage: 'stage',
+  outcome: 'outcome',
+  notes: 'notes',
+  description: 'description',
+  sections: 'sections',
+  skills: 'skills',
+  source: 'source',
+  team: 'team',
+  level: 'level',
+  experience: 'experience',
+  jobRef: 'job_ref',
+  parsedAt: 'parsed_at',
+  parseWarning: 'parse_warning',
+};
+
+const APP_STAGES: AppStage[] = ['saved', 'applied', 'screen', 'interview', 'offer'];
+const APP_OUTCOMES: AppOutcome[] = ['', 'rejected', 'withdrawn', 'accepted'];
+const WORK_MODES = ['', 'Remote', 'Hybrid', 'On-site'];
+const TEXT_LIMITS: Partial<Record<keyof ApplicationInput, number>> = {
+  company: 200, title: 200, location: 200, salary: 120, employmentType: 80,
+  notes: 10000, description: 40000, team: 200, level: 40, experience: 40,
+  jobRef: 80, host: 200, source: 80, parseWarning: 400, url: 2000,
+};
+
+/**
+ * Validate and trim a tracker write the same way for both stores, so a bad
+ * value is caught here instead of by a database CHECK constraint.
+ */
+function cleanAppInput(input: ApplicationInput): ApplicationInput {
+  const out: ApplicationInput = {};
+  for (const [k, v] of Object.entries(input) as [keyof ApplicationInput, any][]) {
+    if (v === undefined || !(k in APP_COLUMNS)) continue;
+    if (k === 'stage') {
+      if (APP_STAGES.includes(v)) out.stage = v;
+    } else if (k === 'outcome') {
+      out.outcome = APP_OUTCOMES.includes(v) ? v : '';
+    } else if (k === 'workMode') {
+      out.workMode = WORK_MODES.includes(v) ? v : '';
+    } else if (k === 'appliedAt' || k === 'postedAt') {
+      out[k] = /^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : '';
+    } else if (k === 'parsedAt') {
+      out.parsedAt = v ? String(v) : '';
+    } else if (k === 'skills') {
+      out.skills = Array.isArray(v)
+        ? v.map((x: unknown) => String(x).trim()).filter(Boolean).slice(0, 40)
+        : [];
+    } else if (k === 'sections') {
+      const secs: Record<string, string[]> = {};
+      for (const [sk, sv] of Object.entries(v && typeof v === 'object' ? v : {})) {
+        if (Array.isArray(sv) && sv.length) {
+          secs[sk] = sv.map((x) => String(x).trim().slice(0, 500)).filter(Boolean).slice(0, 40);
+        }
+      }
+      out.sections = secs;
+    } else {
+      (out as any)[k] = String(v ?? '').trim().slice(0, TEXT_LIMITS[k] ?? 400);
+    }
+  }
+  if (!out.host && out.url) {
+    try {
+      out.host = new URL(out.url).hostname.replace(/^www\./, '');
+    } catch {
+      /* leave host empty */
+    }
+  }
+  return out;
+}
+
+function appToRow(input: ApplicationInput): Record<string, unknown> {
+  const row: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(input) as [keyof ApplicationInput, unknown][]) {
+    // Empty dates and timestamps are NULL in the database, '' in the app.
+    row[APP_COLUMNS[k]] = (k === 'appliedAt' || k === 'parsedAt') && !v ? null : v;
+  }
+  return row;
+}
 
 class SupabaseStore implements PortalStore {
   live = true;
@@ -458,6 +586,48 @@ class SupabaseStore implements PortalStore {
       if (error) throw error;
     }
   }
+
+  // The tracker is private per member: RLS scopes every query to user_id,
+  // and the applications_touch trigger owns history, applied_at and the
+  // timestamps, so the client cannot rewrite its own timeline.
+
+  async listApplications(): Promise<Application[]> {
+    const { data, error } = await this.supa
+      .from('applications')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1000);
+    if (error) throw error;
+    return (data ?? []).map(appFromRow);
+  }
+
+  async createApplication(input: ApplicationInput): Promise<Application> {
+    const clean = cleanAppInput(input);
+    if (!clean.url) throw new Error('A link is required.');
+    const { data, error } = await this.supa
+      .from('applications')
+      .insert({ ...appToRow(clean), user_id: this.user.id })
+      .select()
+      .single();
+    if (error) throw error;
+    return appFromRow(data);
+  }
+
+  async updateApplication(id: string, patch: ApplicationInput): Promise<Application> {
+    const { data, error } = await this.supa
+      .from('applications')
+      .update(appToRow(cleanAppInput(patch)))
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return appFromRow(data);
+  }
+
+  async deleteApplication(id: string): Promise<void> {
+    const { error } = await this.supa.from('applications').delete().eq('id', id);
+    if (error) throw error;
+  }
 }
 
 /* ------------------------------ demo store ----------------------------- */
@@ -469,6 +639,7 @@ type DemoData = {
   /** Demo resume keeps metadata only; no file is stored. */
   resume?: { name: string; updatedAt: string } | null;
   actions?: JobActionMap;
+  applications?: Application[];
 };
 
 function uid(): string {
@@ -595,6 +766,19 @@ class DemoStore implements PortalStore {
   }
 
   async listOpportunities(): Promise<Opportunity[]> {
+    // Local dev: show the real feed (via the dev-only /api/dev-feed) so the
+    // demo session can exercise real posting links. Samples otherwise.
+    if (import.meta.env.DEV) {
+      try {
+        const res = await fetch('/api/dev-feed');
+        if (res.ok) {
+          const rows = await res.json();
+          if (Array.isArray(rows) && rows.length) return rows.map(oppFromRow);
+        }
+      } catch {
+        /* fall back to samples */
+      }
+    }
     return seedOpportunities();
   }
 
@@ -627,6 +811,58 @@ class DemoStore implements PortalStore {
     if (!entry.saved && !entry.applied) delete actions[opportunityId];
     this.save(this.data);
   }
+
+  async listApplications(): Promise<Application[]> {
+    return [...(this.data.applications ?? [])]
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map((a) => ({ ...a }));
+  }
+
+  async createApplication(input: ApplicationInput): Promise<Application> {
+    const clean = cleanAppInput(input);
+    if (!clean.url) throw new Error('A link is required.');
+    const now = new Date().toISOString();
+    const blank: Application = {
+      id: uid(), url: '', host: '', company: '', title: '', location: '', salary: '',
+      workMode: '', employmentType: '', postedAt: '', appliedAt: '', stage: 'saved',
+      outcome: '', notes: '', description: '', sections: {}, skills: [], source: '',
+      team: '', level: '', experience: '', jobRef: '', parsedAt: '', parseWarning: '',
+      history: [], createdAt: now, updatedAt: now,
+    };
+    const app = demoTouch({ ...blank, ...clean });
+    (this.data.applications ??= []).push(app);
+    this.save(this.data);
+    return { ...app };
+  }
+
+  async updateApplication(id: string, patch: ApplicationInput): Promise<Application> {
+    const list = (this.data.applications ??= []);
+    const i = list.findIndex((a) => a.id === id);
+    if (i < 0) throw new Error('That application is gone. Reload and try again.');
+    list[i] = demoTouch({ ...list[i], ...cleanAppInput(patch), history: [...list[i].history] });
+    this.save(this.data);
+    return { ...list[i] };
+  }
+
+  async deleteApplication(id: string): Promise<void> {
+    this.data.applications = (this.data.applications ?? []).filter((a) => a.id !== id);
+    this.save(this.data);
+  }
+}
+
+/** Demo-mode twin of the applications_touch trigger in schema.sql. */
+function demoTouch(app: Application): Application {
+  const now = new Date();
+  app.updatedAt = now.toISOString();
+  if (app.stage !== 'saved' && !app.appliedAt) {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    app.appliedAt = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  }
+  const status = app.outcome || app.stage;
+  if (app.history[app.history.length - 1]?.status !== status) {
+    app.history.push({ status, at: app.updatedAt });
+  }
+  return app;
 }
 
 /* ------------------------------- seed data ----------------------------- */

@@ -453,3 +453,113 @@ drop policy if exists "job_actions: delete own" on public.job_actions;
 create policy "job_actions: delete own"
   on public.job_actions for delete to authenticated
   using (user_id = (select auth.uid()));
+
+-- ------------------------------------------------------------
+-- Applications: each member's personal job tracker
+-- ------------------------------------------------------------
+-- One row per posting a member is tracking. Everything here is private to
+-- the member who created it: RLS scopes every operation to user_id, and the
+-- portal never shows one member's tracker to another. Parsed posting details
+-- (description, sections, skills) are stored alongside so the prep sheet
+-- renders without re-fetching the page.
+create table if not exists public.applications (
+  id              uuid primary key default gen_random_uuid(),
+  user_id         uuid not null references auth.users (id) on delete cascade,
+  url             text not null check (char_length(url) between 1 and 2000),
+  host            text not null default '',
+  company         text not null default '' check (char_length(company) <= 200),
+  title           text not null default '' check (char_length(title) <= 200),
+  location        text not null default '' check (char_length(location) <= 200),
+  salary          text not null default '' check (char_length(salary) <= 120),
+  work_mode       text not null default '' check (work_mode in ('', 'Remote', 'Hybrid', 'On-site')),
+  employment_type text not null default '' check (char_length(employment_type) <= 80),
+  posted_at       text not null default '' check (posted_at = '' or posted_at ~ '^\d{4}-\d{2}-\d{2}$'),
+  applied_at      date,
+  stage           text not null default 'saved'
+                    check (stage in ('saved', 'applied', 'screen', 'interview', 'offer')),
+  outcome         text not null default ''
+                    check (outcome in ('', 'rejected', 'withdrawn', 'accepted')),
+  notes           text not null default '' check (char_length(notes) <= 10000),
+  description     text not null default '' check (char_length(description) <= 40000),
+  sections        jsonb not null default '{}'::jsonb,
+  skills          text[] not null default '{}',
+  source          text not null default '',
+  team            text not null default '' check (char_length(team) <= 200),
+  level           text not null default '' check (char_length(level) <= 40),
+  experience      text not null default '' check (char_length(experience) <= 40),
+  job_ref         text not null default '' check (char_length(job_ref) <= 80),
+  parsed_at       timestamptz,
+  parse_warning   text not null default '',
+  history         jsonb not null default '[]'::jsonb,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+
+create index if not exists applications_user_created_idx
+  on public.applications (user_id, created_at desc);
+
+alter table public.applications enable row level security;
+
+-- Server-side bookkeeping on every write, so the client cannot forge the
+-- timeline: refresh updated_at, stamp applied_at the first time a row moves
+-- past Saved, and append a history entry whenever the effective status
+-- (outcome if set, else stage) changes.
+create or replace function public.applications_touch()
+returns trigger
+language plpgsql
+as $$
+declare
+  status text;
+  last_status text;
+begin
+  new.updated_at := now();
+  if tg_op = 'INSERT' then
+    new.created_at := now();
+    if new.history is null or jsonb_typeof(new.history) <> 'array' then
+      new.history := '[]'::jsonb;
+    end if;
+  else
+    -- history is append-only from the client's point of view
+    new.history := old.history;
+    new.created_at := old.created_at;
+    new.user_id := old.user_id;
+  end if;
+  if new.stage <> 'saved' and new.applied_at is null then
+    new.applied_at := current_date;
+  end if;
+  status := coalesce(nullif(new.outcome, ''), new.stage);
+  if jsonb_array_length(new.history) > 0 then
+    last_status := new.history -> (jsonb_array_length(new.history) - 1) ->> 'status';
+  end if;
+  if last_status is distinct from status then
+    new.history := new.history || jsonb_build_array(jsonb_build_object('status', status, 'at', now()));
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists applications_touch on public.applications;
+create trigger applications_touch
+  before insert or update on public.applications
+  for each row execute function public.applications_touch();
+
+drop policy if exists "applications: read own" on public.applications;
+create policy "applications: read own"
+  on public.applications for select to authenticated
+  using (user_id = (select auth.uid()));
+
+drop policy if exists "applications: create own" on public.applications;
+create policy "applications: create own"
+  on public.applications for insert to authenticated
+  with check (user_id = (select auth.uid()) and public.is_portal_member());
+
+drop policy if exists "applications: update own" on public.applications;
+create policy "applications: update own"
+  on public.applications for update to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+drop policy if exists "applications: delete own" on public.applications;
+create policy "applications: delete own"
+  on public.applications for delete to authenticated
+  using (user_id = (select auth.uid()));

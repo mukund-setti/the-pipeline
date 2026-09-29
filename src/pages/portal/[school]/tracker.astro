@@ -1,0 +1,19 @@
+---
+/**
+ * Application tracker: each member's private list of postings they are
+ * working, with a stage rail, notes, prep sheet and history. See
+ * TrackerApp.tsx and the `applications` table in supabase/schema.sql.
+ */
+import PortalShell from '../../../components/portal/PortalShell.astro';
+import { PORTAL_SCHOOLS, schoolBySlug } from '../../../lib/schools';
+import TrackerApp from '../../../components/portal/TrackerApp';
+
+export function getStaticPaths() {
+  return PORTAL_SCHOOLS.map((s) => ({ params: { school: s.slug } }));
+}
+
+const school = schoolBySlug(Astro.params.school as string)!;
+---
+<PortalShell school={school} active="tracker" title="Tracker">
+  <TrackerApp client:only="react" school={school.slug} />
+</PortalShell>
