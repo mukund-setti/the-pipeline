@@ -32,6 +32,12 @@ import { getSupabase } from '../../lib/supabase';
 import { normUrl } from '../../lib/portal/tracker';
 import TrackApplyDialog from './TrackApplyDialog';
 import { isTopPick, payTag, TOP_TAG } from '../../lib/jobs/tiers';
+import { buildProfile, recommend, DEMO_RESUME_TEXT } from '../../lib/portal/recommend';
+import type { ResumeProfile } from '../../lib/portal/recommend';
+import { extractResumeText } from '../../lib/portal/resumeText';
+
+/** Lifecycle of the "For you" ranking. Everything but 'ready' renders a note. */
+type RecState = 'idle' | 'loading' | 'ready' | 'no-resume' | 'not-pdf' | 'unreadable';
 
 type KindFilter = 'all' | OpportunityKind;
 
@@ -53,10 +59,16 @@ const KIND_LABELS: Record<OpportunityKind, string> = {
   program: 'Program',
 };
 
-type Tier = 'top' | 'all';
+/**
+ * Which openings to show. 'top' and 'all' are editorial (see lib/jobs/tiers);
+ * 'foryou' ranks the feed against the member's own resume, so it is personal
+ * rather than curated and is the only one that needs data loaded on demand.
+ */
+type Tier = 'top' | 'foryou' | 'all';
 
 const TIER_FILTERS: { key: Tier; label: string }[] = [
   { key: 'top', label: 'Top picks' },
+  { key: 'foryou', label: 'For you' },
   { key: 'all', label: 'All openings' },
 ];
 
@@ -237,6 +249,10 @@ export default function OpportunitiesApp({ school }: { school: string }) {
   const [resume, setResume] = useState<ResumeInfo | null | undefined>(undefined);
   const [aiFilter, setAiFilter] = useState<AiFilter | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [recState, setRecState] = useState<RecState>('idle');
+  const [profile, setProfile] = useState<ResumeProfile | null>(null);
+  /** True in demo sessions, which rank against a built-in sample resume. */
+  const [usingSample, setUsingSample] = useState(false);
   /** The member's Tracker rows, used to avoid adding a role twice. */
   const [tracked, setTracked] = useState<Application[]>([]);
   /** The row whose "Mark applied" opened the Add to tracker dialog. */
@@ -287,11 +303,57 @@ export default function OpportunitiesApp({ school }: { school: string }) {
 
   const setTier = (next: Tier) => {
     setTierState(next);
+    // 'foryou' is deliberately not remembered: restoring it would download
+    // pdf.js and re-read the resume on every visit to this page.
     try {
-      localStorage.setItem(TIER_STORAGE_KEY, next);
+      if (next !== 'foryou') localStorage.setItem(TIER_STORAGE_KEY, next);
     } catch {
       /* storage blocked: choice lasts this visit */
     }
+    // Reload on every open except a ready one, since the member may have
+    // uploaded or replaced a resume since the last attempt.
+    if (next === 'foryou' && recState !== 'ready') loadProfile();
+  };
+
+  /**
+   * Build the resume profile on first use of "For you". Deferred to the click
+   * so pdf.js never loads for members who don't use it. The file comes down
+   * through the store (same path as the resume viewer) and is parsed here in
+   * the browser; its text never leaves the device.
+   */
+  const loadProfile = async () => {
+    const store = storeRef.current;
+    if (!store) return;
+    setRecState('loading');
+    // Demo sessions do not keep the uploaded file, so they rank against a
+    // built-in sample instead of showing an empty feature.
+    if (!store.live) {
+      setProfile(buildProfile(DEMO_RESUME_TEXT));
+      setUsingSample(true);
+      setRecState('ready');
+      return;
+    }
+    const info = await store.getResume().catch(() => null);
+    if (!info) {
+      setRecState('no-resume');
+      return;
+    }
+    setUsingSample(false);
+    let blob: Blob;
+    try {
+      blob = await store.downloadResume();
+    } catch {
+      setRecState('unreadable');
+      return;
+    }
+    const result = await extractResumeText(blob, info.name);
+    if (!result.ok) {
+      setRecState(result.reason);
+      return;
+    }
+    const built = buildProfile(result.text);
+    setProfile(built);
+    setRecState(built ? 'ready' : 'unreadable');
   };
 
   const showActionNote = (msg: string) => {
@@ -384,6 +446,15 @@ export default function OpportunitiesApp({ school }: { school: string }) {
     [opportunities, actions]
   );
 
+  /** Rank + reasons per opportunity id, or null until a profile exists. */
+  const recs = useMemo(() => {
+    if (!profile) return null;
+    const ranked = recommend(profile, opportunities, actions);
+    return new Map(ranked.map((r, i) => [r.opportunity.id, { rank: i, reasons: r.reasons }]));
+  }, [profile, opportunities, actions]);
+
+  const ranking = tier === 'foryou' && recState === 'ready' && recs !== null;
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return opportunities
@@ -404,6 +475,10 @@ export default function OpportunitiesApp({ school }: { school: string }) {
         return true;
       })
       .filter((o) => (tier === 'top' ? topIds.has(o.id) : true))
+      // Ranked view: recommend() omits applied roles, so absence from the map
+      // drops them here too. Other filters still apply, so "For you" combines
+      // with the kind pills, search and Ask AI as expected.
+      .filter((o) => (ranking ? recs!.has(o.id) : true))
       .filter((o) => (kind === 'all' ? true : o.kind === kind))
       .filter((o) => (actionFilter ? !!actions[o.id]?.[actionFilter] : true))
       .filter((o) => {
@@ -413,8 +488,12 @@ export default function OpportunitiesApp({ school }: { school: string }) {
           .toLowerCase();
         return haystack.includes(q);
       })
-      .sort((a, b) => b.postedAt.localeCompare(a.postedAt));
-  }, [opportunities, tier, topIds, kind, query, aiFilter, actionFilter, actions]);
+      .sort((a, b) =>
+        ranking
+          ? recs!.get(a.id)!.rank - recs!.get(b.id)!.rank
+          : b.postedAt.localeCompare(a.postedAt)
+      );
+  }, [opportunities, tier, topIds, kind, query, aiFilter, actionFilter, actions, ranking, recs]);
 
   // Any filter change starts the list over at the first page.
   useEffect(() => setVisible(PAGE_SIZE), [tier, kind, query, aiFilter, actionFilter]);
@@ -494,7 +573,8 @@ export default function OpportunitiesApp({ school }: { school: string }) {
       >
         {TIER_FILTERS.map((t) => {
           const active = tier === t.key;
-          const count = t.key === 'top' ? topIds.size : opportunities.length;
+          const count =
+            t.key === 'top' ? topIds.size : t.key === 'foryou' ? recs?.size : opportunities.length;
           return (
             <button
               key={t.key}
@@ -510,7 +590,7 @@ export default function OpportunitiesApp({ school }: { school: string }) {
               }
             >
               {t.label}
-              {!loading && (
+              {!loading && count !== undefined && (
                 <span className="ml-1.5 text-[0.72rem] font-medium opacity-75">
                   {count.toLocaleString()}
                 </span>
@@ -519,6 +599,49 @@ export default function OpportunitiesApp({ school }: { school: string }) {
           );
         })}
       </div>
+
+      {/* "For you" status: what the ranking is based on, or why it is not running. */}
+      {tier === 'foryou' && (
+        <div className="mb-4 text-[0.8rem] text-ink-soft" role="status" aria-live="polite">
+          {recState === 'loading' && (
+            <span className="inline-flex items-center gap-2">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-ink/20 border-t-ink/60" />
+              Reading your resume…
+            </span>
+          )}
+          {recState === 'ready' && (
+            <span>
+              {usingSample
+                ? 'Demo session: ranked against a sample resume.'
+                : 'Ranked against your resume. It is read on this device and never uploaded anywhere.'}
+            </span>
+          )}
+          {recState === 'no-resume' && (
+            <span>
+              Add a resume on your{' '}
+              <a href={`/portal/${school}/`} className="font-semibold text-ink hover:underline">
+                Home tab
+              </a>{' '}
+              and openings will be ranked against it.
+            </span>
+          )}
+          {recState === 'not-pdf' && (
+            <span>
+              Ranking reads PDF resumes. Re-upload yours as a PDF on your{' '}
+              <a href={`/portal/${school}/`} className="font-semibold text-ink hover:underline">
+                Home tab
+              </a>
+              .
+            </span>
+          )}
+          {recState === 'unreadable' && (
+            <span>
+              We could not read enough text from your resume to rank openings. If it is a scanned
+              image, export it from your editor as a PDF with selectable text.
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Controls: kind pills, saved/applied pills, search, Ask AI. */}
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -747,6 +870,20 @@ export default function OpportunitiesApp({ school }: { school: string }) {
                         posted {relativeTime(o.postedAt)}
                       </span>
                     </div>
+                    {ranking && (recs!.get(o.id)?.reasons.length ?? 0) > 0 && (
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[0.72rem]">
+                        <span className="font-semibold text-ink-soft">Why:</span>
+                        {recs!.get(o.id)!.reasons.map((r) => (
+                          <span
+                            key={r}
+                            className="rounded-pill px-2 py-px font-semibold"
+                            style={{ background: 'var(--school-soft)', color: 'var(--school-deep)' }}
+                          >
+                            {r}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     {topics.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {topics.slice(0, 4).map((t) => (

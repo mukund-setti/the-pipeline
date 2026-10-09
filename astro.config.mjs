@@ -33,4 +33,11 @@ export default defineConfig({
     prefetchAll: true,
     defaultStrategy: 'hover',
   },
+  vite: {
+    // pdf.js is only reached through a dynamic import (the "For you" resume
+    // reader), so Vite's dev server discovers it on first click, re-optimizes,
+    // and 504s that request. Pre-bundling it up front avoids the failed first
+    // attempt. Dev-only: production builds chunk it normally.
+    optimizeDeps: { include: ['pdfjs-dist'] },
+  },
 });
