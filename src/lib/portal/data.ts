@@ -1099,5 +1099,10 @@ export function seedOpportunities(): Opportunity[] {
     mk('Tech Fellowship, Intro Track', 'CodePath', 'https://www.codepath.org/courses', 'program', 'Community drop', ['courses', 'free', 'no-experience-ok'], 'Remote', 7),
     mk('Software Engineer, New Grad', 'Datadog', 'https://careers.datadoghq.com/early-career/', 'new-grad', 'Hacker News · Who is hiring', ['swe', 'new-grad', 'nyc'], 'New York, NY', 8),
     mk('Firmware Intern, Summer 2027', 'SpaceX', 'https://www.spacex.com/careers/', 'internship', 'Hacker News · Who is hiring', ['embedded', 'hardware'], 'Hawthorne, CA', 9),
+    // Past the age cutoff: these exercise the "Show older" split, which the
+    // live feed hits constantly (rows are insert-only and nothing expires).
+    mk('Software Engineer Intern, Summer 2026', 'Stripe', 'https://stripe.com/jobs/university', 'internship', 'Simplify · GitHub', ['swe', 'fintech', 'backend'], 'Seattle, WA', 95),
+    mk('Data Science Intern, Winter 2026', 'Airbnb', 'https://careers.airbnb.com/university/', 'internship', 'Simplify · GitHub', ['data', 'ai-ml'], 'San Francisco, CA', 140),
+    mk('Frontend Engineer Intern', 'Figma', 'https://www.figma.com/careers/', 'internship', 'Simplify · GitHub', ['frontend', 'swe'], 'Remote', 210),
   ];
 }

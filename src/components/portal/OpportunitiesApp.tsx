@@ -32,9 +32,11 @@ import { getSupabase } from '../../lib/supabase';
 import { normUrl } from '../../lib/portal/tracker';
 import TrackApplyDialog from './TrackApplyDialog';
 import { isTopPick, payTag, TOP_TAG } from '../../lib/jobs/tiers';
+import { isHiddenByAge, isOlder, OLDER_AFTER_DAYS } from '../../lib/jobs/age';
 import { buildProfile, recommend, DEMO_RESUME_TEXT } from '../../lib/portal/recommend';
 import type { ResumeProfile } from '../../lib/portal/recommend';
 import { extractResumeText } from '../../lib/portal/resumeText';
+import { VIEWED_MATCHES_KEY } from '../../lib/portal/firstRun';
 
 /** Lifecycle of the "For you" ranking. Everything but 'ready' renders a note. */
 type RecState = 'idle' | 'loading' | 'ready' | 'no-resume' | 'not-pdf' | 'unreadable';
@@ -249,6 +251,7 @@ export default function OpportunitiesApp({ school }: { school: string }) {
   const [resume, setResume] = useState<ResumeInfo | null | undefined>(undefined);
   const [aiFilter, setAiFilter] = useState<AiFilter | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [showOlder, setShowOlder] = useState(false);
   const [recState, setRecState] = useState<RecState>('idle');
   const [profile, setProfile] = useState<ResumeProfile | null>(null);
   /** True in demo sessions, which rank against a built-in sample resume. */
@@ -293,7 +296,20 @@ export default function OpportunitiesApp({ school }: { school: string }) {
   }, [school]);
 
   // Remember the member's tier choice on this device (best effort).
+  // ?view=foryou wins over the stored choice: it means something deliberately
+  // sent the member here to see their matches (the home checklist does), so
+  // landing on anything else would make that link a lie.
   useEffect(() => {
+    let wanted: Tier | null = null;
+    try {
+      if (new URLSearchParams(location.search).get('view') === 'foryou') wanted = 'foryou';
+    } catch {
+      /* no URL access: fall through to the stored choice */
+    }
+    if (wanted === 'foryou') {
+      setTier('foryou');
+      return;
+    }
     try {
       if (localStorage.getItem(TIER_STORAGE_KEY) === 'top') setTierState('top');
     } catch {
@@ -310,9 +326,20 @@ export default function OpportunitiesApp({ school }: { school: string }) {
     } catch {
       /* storage blocked: choice lasts this visit */
     }
-    // Reload on every open except a ready one, since the member may have
-    // uploaded or replaced a resume since the last attempt.
-    if (next === 'foryou' && recState !== 'ready') loadProfile();
+    if (next === 'foryou') {
+      // Lets the home page's first-run checklist tick this step off. A
+      // per-device preference, not a fact about the member, so localStorage
+      // is the right home for it.
+      try {
+        localStorage.setItem(VIEWED_MATCHES_KEY, '1');
+      } catch {
+        /* storage blocked: the step just stays unticked */
+      }
+      // Retry on reopen after a failed attempt, since the member may have
+      // uploaded or replaced a resume since. A first load from 'idle' is left
+      // to the effect below, which waits for the store to exist.
+      if (storeRef.current && recState !== 'ready' && recState !== 'idle') loadProfile();
+    }
   };
 
   /**
@@ -355,6 +382,16 @@ export default function OpportunitiesApp({ school }: { school: string }) {
     setProfile(built);
     setRecState(built ? 'ready' : 'unreadable');
   };
+
+  /**
+   * Load the resume profile once the store is ready. Needed because the view
+   * can be selected before the portal data resolves (arriving at
+   * ?view=foryou from the home checklist), and loadProfile is a no-op
+   * without a store.
+   */
+  useEffect(() => {
+    if (tier === 'foryou' && !loading && recState === 'idle') loadProfile();
+  }, [tier, loading, recState]);
 
   const showActionNote = (msg: string) => {
     setActionNote(msg);
@@ -495,8 +532,26 @@ export default function OpportunitiesApp({ school }: { school: string }) {
       );
   }, [opportunities, tier, topIds, kind, query, aiFilter, actionFilter, actions, ranking, recs]);
 
-  // Any filter change starts the list over at the first page.
-  useEffect(() => setVisible(PAGE_SIZE), [tier, kind, query, aiFilter, actionFilter]);
+  /**
+   * Split the filtered feed by age. Rows are insert-only and nothing marks a
+   * posting closed, so without this the feed fills with dead links. A role the
+   * member saved or applied to stays in `recent` however old it is.
+   */
+  const [recent, older] = useMemo(() => {
+    const a: Opportunity[] = [];
+    const b: Opportunity[] = [];
+    for (const o of filtered) (isHiddenByAge(o.postedAt, actions[o.id]) ? b : a).push(o);
+    return [a, b];
+  }, [filtered, actions]);
+
+  const shown = showOlder ? [...recent, ...older] : recent;
+
+  // Any filter change starts the list over at the first page, and re-hides
+  // older rows so a new filter is judged on current postings.
+  useEffect(() => {
+    setVisible(PAGE_SIZE);
+    setShowOlder(false);
+  }, [tier, kind, query, aiFilter, actionFilter]);
 
   /** Shared pill styling so the action pills match the kind pills exactly. */
   const pillClass = (active: boolean) =>
@@ -782,9 +837,14 @@ export default function OpportunitiesApp({ school }: { school: string }) {
       {/* Counts line. */}
       {!loading && (
         <p className="mb-3 text-[0.78rem] font-medium text-ink-soft">
-          {filtered.length.toLocaleString()}{' '}
-          {filtered.length === 1 ? 'opening' : 'openings'}
+          {shown.length.toLocaleString()} {shown.length === 1 ? 'opening' : 'openings'}
           {tier === 'top' ? ' at top companies' : ''}
+          {!showOlder && older.length > 0 && (
+            <span className="opacity-70">
+              {' '}
+              · {older.length.toLocaleString()} older hidden
+            </span>
+          )}
         </p>
       )}
 
@@ -816,7 +876,7 @@ export default function OpportunitiesApp({ school }: { school: string }) {
             </div>
           ))}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : shown.length === 0 && older.length === 0 ? (
         <div className="portal-card flex flex-col items-center gap-2 px-6 py-12 text-center">
           <span className="font-display text-[1.05rem] font-semibold text-ink">
             Nothing matches that filter
@@ -831,7 +891,7 @@ export default function OpportunitiesApp({ school }: { school: string }) {
       ) : (
         <>
         <ul className="flex flex-col gap-3">
-          {filtered.slice(0, visible).map((o) => {
+          {shown.slice(0, visible).map((o) => {
             const sample = o.id.startsWith('seed-') && (storeRef.current?.live ?? true);
             const saved = !!actions[o.id]?.saved;
             const applied = !!actions[o.id]?.applied;
@@ -849,6 +909,14 @@ export default function OpportunitiesApp({ school }: { school: string }) {
                       </span>
                       {isNew(o.postedAt) && (
                         <span className="portal-chip portal-chip--gold">New</span>
+                      )}
+                      {/* "Older", never "Closed": we know the age, not the
+                          status, and a guess rendered as a fact is worse
+                          than no chip at all. */}
+                      {isOlder(o.postedAt) && (
+                        <span className="portal-chip opacity-70" title="May no longer be open">
+                          Older
+                        </span>
                       )}
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.8rem] text-ink-soft">
@@ -989,20 +1057,34 @@ export default function OpportunitiesApp({ school }: { school: string }) {
             );
           })}
         </ul>
-        {filtered.length > visible && (
+        {/* One button, two jobs: page through current openings, then offer
+            the older ones. Keeping them in the same spot means there are
+            never two competing "more" controls. */}
+        {shown.length > visible ? (
           <div className="mt-5 flex justify-center">
             <button
               type="button"
               className="portal-btn-ghost"
               onClick={() => setVisible((v) => v + PAGE_SIZE)}
             >
-              Show {Math.min(PAGE_SIZE, filtered.length - visible)} more
+              Show {Math.min(PAGE_SIZE, shown.length - visible)} more
               <span className="text-ink-soft">
-                ({(filtered.length - visible).toLocaleString()} left)
+                ({(shown.length - visible).toLocaleString()} left)
               </span>
             </button>
           </div>
-        )}
+        ) : !showOlder && older.length > 0 ? (
+          <div className="mt-6 border-t border-line pt-5 text-center">
+            <p className="mb-3 text-[0.82rem] text-ink-soft">
+              {older.length.toLocaleString()} older{' '}
+              {older.length === 1 ? 'posting' : 'postings'}, first seen over{' '}
+              {OLDER_AFTER_DAYS} days ago. Many will have closed.
+            </p>
+            <button type="button" className="portal-btn-ghost" onClick={() => setShowOlder(true)}>
+              Show older
+            </button>
+          </div>
+        ) : null}
         </>
       )}
 
