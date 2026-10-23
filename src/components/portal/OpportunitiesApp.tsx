@@ -624,6 +624,7 @@ export default function OpportunitiesApp({ school }: { school: string }) {
       <div
         className="mb-4 inline-flex rounded-pill border border-line p-1"
         role="group"
+        data-tour="tier-toggle"
         aria-label="Which openings to show"
       >
         {TIER_FILTERS.map((t) => {

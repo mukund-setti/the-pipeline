@@ -23,6 +23,7 @@ import {
   VIEWED_MATCHES_KEY,
   type FirstRunFacts,
 } from '../../lib/portal/firstRun';
+import { TOUR_DONE_KEY } from '../../lib/portal/tour';
 
 export default function FirstRunCard({ school }: { school: string }) {
   const [facts, setFacts] = useState<FirstRunFacts | null>(null);
@@ -52,6 +53,10 @@ export default function FirstRunCard({ school }: { school: string }) {
     (async () => {
       try {
         if (localStorage.getItem(DISMISS_KEY) === '1') return;
+        // The guided tour owns the first visit. Two onboarding things at
+        // once is noise, so the checklist waits until the tour is done or
+        // skipped and then takes over the "what to do next" job.
+        if (localStorage.getItem(TOUR_DONE_KEY) !== '1') return;
       } catch {
         /* storage blocked: show the card */
       }
@@ -64,9 +69,17 @@ export default function FirstRunCard({ school }: { school: string }) {
     // step stays unticked until a reload, which reads as broken.
     const onResume = () => void read();
     window.addEventListener('portal:resume-changed', onResume);
+    // Appear as soon as the tour ends, without needing a reload.
+    const onTourEnd = () => {
+      if (cancelled) return;
+      setDismissed(false);
+      void read();
+    };
+    window.addEventListener('portal:tour-ended', onTourEnd);
     return () => {
       cancelled = true;
       window.removeEventListener('portal:resume-changed', onResume);
+      window.removeEventListener('portal:tour-ended', onTourEnd);
     };
   }, [school]);
 
