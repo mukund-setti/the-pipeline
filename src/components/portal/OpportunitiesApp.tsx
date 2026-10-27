@@ -32,6 +32,14 @@ import { getSupabase } from '../../lib/supabase';
 import { normUrl } from '../../lib/portal/tracker';
 import TrackApplyDialog from './TrackApplyDialog';
 import { isTopPick, payTag, TOP_TAG } from '../../lib/jobs/tiers';
+import { isHiddenByAge, isOlder, OLDER_AFTER_DAYS } from '../../lib/jobs/age';
+import { buildProfile, recommend, DEMO_RESUME_TEXT } from '../../lib/portal/recommend';
+import type { ResumeProfile } from '../../lib/portal/recommend';
+import { extractResumeText } from '../../lib/portal/resumeText';
+import { VIEWED_MATCHES_KEY } from '../../lib/portal/firstRun';
+
+/** Lifecycle of the "For you" ranking. Everything but 'ready' renders a note. */
+type RecState = 'idle' | 'loading' | 'ready' | 'no-resume' | 'not-pdf' | 'unreadable';
 
 type KindFilter = 'all' | OpportunityKind;
 
@@ -53,10 +61,16 @@ const KIND_LABELS: Record<OpportunityKind, string> = {
   program: 'Program',
 };
 
-type Tier = 'top' | 'all';
+/**
+ * Which openings to show. 'top' and 'all' are editorial (see lib/jobs/tiers);
+ * 'foryou' ranks the feed against the member's own resume, so it is personal
+ * rather than curated and is the only one that needs data loaded on demand.
+ */
+type Tier = 'top' | 'foryou' | 'all';
 
 const TIER_FILTERS: { key: Tier; label: string }[] = [
   { key: 'top', label: 'Top picks' },
+  { key: 'foryou', label: 'For you' },
   { key: 'all', label: 'All openings' },
 ];
 
@@ -237,6 +251,11 @@ export default function OpportunitiesApp({ school }: { school: string }) {
   const [resume, setResume] = useState<ResumeInfo | null | undefined>(undefined);
   const [aiFilter, setAiFilter] = useState<AiFilter | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [showOlder, setShowOlder] = useState(false);
+  const [recState, setRecState] = useState<RecState>('idle');
+  const [profile, setProfile] = useState<ResumeProfile | null>(null);
+  /** True in demo sessions, which rank against a built-in sample resume. */
+  const [usingSample, setUsingSample] = useState(false);
   /** The member's Tracker rows, used to avoid adding a role twice. */
   const [tracked, setTracked] = useState<Application[]>([]);
   /** The row whose "Mark applied" opened the Add to tracker dialog. */
@@ -277,7 +296,20 @@ export default function OpportunitiesApp({ school }: { school: string }) {
   }, [school]);
 
   // Remember the member's tier choice on this device (best effort).
+  // ?view=foryou wins over the stored choice: it means something deliberately
+  // sent the member here to see their matches (the home checklist does), so
+  // landing on anything else would make that link a lie.
   useEffect(() => {
+    let wanted: Tier | null = null;
+    try {
+      if (new URLSearchParams(location.search).get('view') === 'foryou') wanted = 'foryou';
+    } catch {
+      /* no URL access: fall through to the stored choice */
+    }
+    if (wanted === 'foryou') {
+      setTier('foryou');
+      return;
+    }
     try {
       if (localStorage.getItem(TIER_STORAGE_KEY) === 'top') setTierState('top');
     } catch {
@@ -287,12 +319,79 @@ export default function OpportunitiesApp({ school }: { school: string }) {
 
   const setTier = (next: Tier) => {
     setTierState(next);
+    // 'foryou' is deliberately not remembered: restoring it would download
+    // pdf.js and re-read the resume on every visit to this page.
     try {
-      localStorage.setItem(TIER_STORAGE_KEY, next);
+      if (next !== 'foryou') localStorage.setItem(TIER_STORAGE_KEY, next);
     } catch {
       /* storage blocked: choice lasts this visit */
     }
+    if (next === 'foryou') {
+      // Lets the home page's first-run checklist tick this step off. A
+      // per-device preference, not a fact about the member, so localStorage
+      // is the right home for it.
+      try {
+        localStorage.setItem(VIEWED_MATCHES_KEY, '1');
+      } catch {
+        /* storage blocked: the step just stays unticked */
+      }
+      // Retry on reopen after a failed attempt, since the member may have
+      // uploaded or replaced a resume since. A first load from 'idle' is left
+      // to the effect below, which waits for the store to exist.
+      if (storeRef.current && recState !== 'ready' && recState !== 'idle') loadProfile();
+    }
   };
+
+  /**
+   * Build the resume profile on first use of "For you". Deferred to the click
+   * so pdf.js never loads for members who don't use it. The file comes down
+   * through the store (same path as the resume viewer) and is parsed here in
+   * the browser; its text never leaves the device.
+   */
+  const loadProfile = async () => {
+    const store = storeRef.current;
+    if (!store) return;
+    setRecState('loading');
+    // Demo sessions do not keep the uploaded file, so they rank against a
+    // built-in sample instead of showing an empty feature.
+    if (!store.live) {
+      setProfile(buildProfile(DEMO_RESUME_TEXT));
+      setUsingSample(true);
+      setRecState('ready');
+      return;
+    }
+    const info = await store.getResume().catch(() => null);
+    if (!info) {
+      setRecState('no-resume');
+      return;
+    }
+    setUsingSample(false);
+    let blob: Blob;
+    try {
+      blob = await store.downloadResume();
+    } catch {
+      setRecState('unreadable');
+      return;
+    }
+    const result = await extractResumeText(blob, info.name);
+    if (!result.ok) {
+      setRecState(result.reason);
+      return;
+    }
+    const built = buildProfile(result.text);
+    setProfile(built);
+    setRecState(built ? 'ready' : 'unreadable');
+  };
+
+  /**
+   * Load the resume profile once the store is ready. Needed because the view
+   * can be selected before the portal data resolves (arriving at
+   * ?view=foryou from the home checklist), and loadProfile is a no-op
+   * without a store.
+   */
+  useEffect(() => {
+    if (tier === 'foryou' && !loading && recState === 'idle') loadProfile();
+  }, [tier, loading, recState]);
 
   const showActionNote = (msg: string) => {
     setActionNote(msg);
@@ -384,6 +483,15 @@ export default function OpportunitiesApp({ school }: { school: string }) {
     [opportunities, actions]
   );
 
+  /** Rank + reasons per opportunity id, or null until a profile exists. */
+  const recs = useMemo(() => {
+    if (!profile) return null;
+    const ranked = recommend(profile, opportunities, actions);
+    return new Map(ranked.map((r, i) => [r.opportunity.id, { rank: i, reasons: r.reasons }]));
+  }, [profile, opportunities, actions]);
+
+  const ranking = tier === 'foryou' && recState === 'ready' && recs !== null;
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return opportunities
@@ -404,6 +512,10 @@ export default function OpportunitiesApp({ school }: { school: string }) {
         return true;
       })
       .filter((o) => (tier === 'top' ? topIds.has(o.id) : true))
+      // Ranked view: recommend() omits applied roles, so absence from the map
+      // drops them here too. Other filters still apply, so "For you" combines
+      // with the kind pills, search and Ask AI as expected.
+      .filter((o) => (ranking ? recs!.has(o.id) : true))
       .filter((o) => (kind === 'all' ? true : o.kind === kind))
       .filter((o) => (actionFilter ? !!actions[o.id]?.[actionFilter] : true))
       .filter((o) => {
@@ -413,11 +525,33 @@ export default function OpportunitiesApp({ school }: { school: string }) {
           .toLowerCase();
         return haystack.includes(q);
       })
-      .sort((a, b) => b.postedAt.localeCompare(a.postedAt));
-  }, [opportunities, tier, topIds, kind, query, aiFilter, actionFilter, actions]);
+      .sort((a, b) =>
+        ranking
+          ? recs!.get(a.id)!.rank - recs!.get(b.id)!.rank
+          : b.postedAt.localeCompare(a.postedAt)
+      );
+  }, [opportunities, tier, topIds, kind, query, aiFilter, actionFilter, actions, ranking, recs]);
 
-  // Any filter change starts the list over at the first page.
-  useEffect(() => setVisible(PAGE_SIZE), [tier, kind, query, aiFilter, actionFilter]);
+  /**
+   * Split the filtered feed by age. Rows are insert-only and nothing marks a
+   * posting closed, so without this the feed fills with dead links. A role the
+   * member saved or applied to stays in `recent` however old it is.
+   */
+  const [recent, older] = useMemo(() => {
+    const a: Opportunity[] = [];
+    const b: Opportunity[] = [];
+    for (const o of filtered) (isHiddenByAge(o.postedAt, actions[o.id]) ? b : a).push(o);
+    return [a, b];
+  }, [filtered, actions]);
+
+  const shown = showOlder ? [...recent, ...older] : recent;
+
+  // Any filter change starts the list over at the first page, and re-hides
+  // older rows so a new filter is judged on current postings.
+  useEffect(() => {
+    setVisible(PAGE_SIZE);
+    setShowOlder(false);
+  }, [tier, kind, query, aiFilter, actionFilter]);
 
   /** Shared pill styling so the action pills match the kind pills exactly. */
   const pillClass = (active: boolean) =>
@@ -490,11 +624,13 @@ export default function OpportunitiesApp({ school }: { school: string }) {
       <div
         className="mb-4 inline-flex rounded-pill border border-line p-1"
         role="group"
+        data-tour="tier-toggle"
         aria-label="Which openings to show"
       >
         {TIER_FILTERS.map((t) => {
           const active = tier === t.key;
-          const count = t.key === 'top' ? topIds.size : opportunities.length;
+          const count =
+            t.key === 'top' ? topIds.size : t.key === 'foryou' ? recs?.size : opportunities.length;
           return (
             <button
               key={t.key}
@@ -510,7 +646,7 @@ export default function OpportunitiesApp({ school }: { school: string }) {
               }
             >
               {t.label}
-              {!loading && (
+              {!loading && count !== undefined && (
                 <span className="ml-1.5 text-[0.72rem] font-medium opacity-75">
                   {count.toLocaleString()}
                 </span>
@@ -519,6 +655,49 @@ export default function OpportunitiesApp({ school }: { school: string }) {
           );
         })}
       </div>
+
+      {/* "For you" status: what the ranking is based on, or why it is not running. */}
+      {tier === 'foryou' && (
+        <div className="mb-4 text-[0.8rem] text-ink-soft" role="status" aria-live="polite">
+          {recState === 'loading' && (
+            <span className="inline-flex items-center gap-2">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-ink/20 border-t-ink/60" />
+              Reading your resume…
+            </span>
+          )}
+          {recState === 'ready' && (
+            <span>
+              {usingSample
+                ? 'Demo session: ranked against a sample resume.'
+                : 'Ranked against your resume. It is read on this device and never uploaded anywhere.'}
+            </span>
+          )}
+          {recState === 'no-resume' && (
+            <span>
+              Add a resume on your{' '}
+              <a href={`/portal/${school}/`} className="font-semibold text-ink hover:underline">
+                Home tab
+              </a>{' '}
+              and openings will be ranked against it.
+            </span>
+          )}
+          {recState === 'not-pdf' && (
+            <span>
+              Ranking reads PDF resumes. Re-upload yours as a PDF on your{' '}
+              <a href={`/portal/${school}/`} className="font-semibold text-ink hover:underline">
+                Home tab
+              </a>
+              .
+            </span>
+          )}
+          {recState === 'unreadable' && (
+            <span>
+              We could not read enough text from your resume to rank openings. If it is a scanned
+              image, export it from your editor as a PDF with selectable text.
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Controls: kind pills, saved/applied pills, search, Ask AI. */}
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -659,9 +838,14 @@ export default function OpportunitiesApp({ school }: { school: string }) {
       {/* Counts line. */}
       {!loading && (
         <p className="mb-3 text-[0.78rem] font-medium text-ink-soft">
-          {filtered.length.toLocaleString()}{' '}
-          {filtered.length === 1 ? 'opening' : 'openings'}
+          {shown.length.toLocaleString()} {shown.length === 1 ? 'opening' : 'openings'}
           {tier === 'top' ? ' at top companies' : ''}
+          {!showOlder && older.length > 0 && (
+            <span className="opacity-70">
+              {' '}
+              · {older.length.toLocaleString()} older hidden
+            </span>
+          )}
         </p>
       )}
 
@@ -693,7 +877,7 @@ export default function OpportunitiesApp({ school }: { school: string }) {
             </div>
           ))}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : shown.length === 0 && older.length === 0 ? (
         <div className="portal-card flex flex-col items-center gap-2 px-6 py-12 text-center">
           <span className="font-display text-[1.05rem] font-semibold text-ink">
             Nothing matches that filter
@@ -708,7 +892,7 @@ export default function OpportunitiesApp({ school }: { school: string }) {
       ) : (
         <>
         <ul className="flex flex-col gap-3">
-          {filtered.slice(0, visible).map((o) => {
+          {shown.slice(0, visible).map((o) => {
             const sample = o.id.startsWith('seed-') && (storeRef.current?.live ?? true);
             const saved = !!actions[o.id]?.saved;
             const applied = !!actions[o.id]?.applied;
@@ -726,6 +910,14 @@ export default function OpportunitiesApp({ school }: { school: string }) {
                       </span>
                       {isNew(o.postedAt) && (
                         <span className="portal-chip portal-chip--gold">New</span>
+                      )}
+                      {/* "Older", never "Closed": we know the age, not the
+                          status, and a guess rendered as a fact is worse
+                          than no chip at all. */}
+                      {isOlder(o.postedAt) && (
+                        <span className="portal-chip opacity-70" title="May no longer be open">
+                          Older
+                        </span>
                       )}
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.8rem] text-ink-soft">
@@ -747,6 +939,20 @@ export default function OpportunitiesApp({ school }: { school: string }) {
                         posted {relativeTime(o.postedAt)}
                       </span>
                     </div>
+                    {ranking && (recs!.get(o.id)?.reasons.length ?? 0) > 0 && (
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[0.72rem]">
+                        <span className="font-semibold text-ink-soft">Why:</span>
+                        {recs!.get(o.id)!.reasons.map((r) => (
+                          <span
+                            key={r}
+                            className="rounded-pill px-2 py-px font-semibold"
+                            style={{ background: 'var(--school-soft)', color: 'var(--school-deep)' }}
+                          >
+                            {r}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     {topics.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {topics.slice(0, 4).map((t) => (
@@ -852,20 +1058,34 @@ export default function OpportunitiesApp({ school }: { school: string }) {
             );
           })}
         </ul>
-        {filtered.length > visible && (
+        {/* One button, two jobs: page through current openings, then offer
+            the older ones. Keeping them in the same spot means there are
+            never two competing "more" controls. */}
+        {shown.length > visible ? (
           <div className="mt-5 flex justify-center">
             <button
               type="button"
               className="portal-btn-ghost"
               onClick={() => setVisible((v) => v + PAGE_SIZE)}
             >
-              Show {Math.min(PAGE_SIZE, filtered.length - visible)} more
+              Show {Math.min(PAGE_SIZE, shown.length - visible)} more
               <span className="text-ink-soft">
-                ({(filtered.length - visible).toLocaleString()} left)
+                ({(shown.length - visible).toLocaleString()} left)
               </span>
             </button>
           </div>
-        )}
+        ) : !showOlder && older.length > 0 ? (
+          <div className="mt-6 border-t border-line pt-5 text-center">
+            <p className="mb-3 text-[0.82rem] text-ink-soft">
+              {older.length.toLocaleString()} older{' '}
+              {older.length === 1 ? 'posting' : 'postings'}, first seen over{' '}
+              {OLDER_AFTER_DAYS} days ago. Many will have closed.
+            </p>
+            <button type="button" className="portal-btn-ghost" onClick={() => setShowOlder(true)}>
+              Show older
+            </button>
+          </div>
+        ) : null}
         </>
       )}
 

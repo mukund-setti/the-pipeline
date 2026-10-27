@@ -7,6 +7,7 @@
  */
 import PortalShell from '../../../components/portal/PortalShell.astro';
 import ResumeCard from '../../../components/portal/ResumeCard';
+import FirstRunCard from '../../../components/portal/FirstRunCard';
 import { PORTAL_SCHOOLS, schoolBySlug } from '../../../lib/schools';
 
 export function getStaticPaths() {
@@ -64,8 +65,17 @@ const quickNav = [
       </p>
     </section>
 
+    {/* ── First-run checklist ──────────────────────────────── */}
+    {/* Renders nothing once the member is set up or has dismissed it, so it
+        costs established members nothing but the island. */}
+    <div class="mt-6">
+      <FirstRunCard client:only="react" school={school.slug} />
+    </div>
+
     {/* ── Resume drop ──────────────────────────────────────── */}
-    <ResumeCard client:only="react" school={school.slug} />
+    <div data-tour="resume-card">
+      <ResumeCard client:only="react" school={school.slug} />
+    </div>
 
     {/* ── Quick nav ────────────────────────────────────────── */}
     <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

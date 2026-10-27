@@ -20,6 +20,7 @@ import '../../styles/global.css';
 import '../../styles/portal.css';
 
 import Mark from '../ui/Mark.astro';
+import TourOverlay from './TourOverlay';
 import type { PortalSchool } from '../../lib/schools';
 import { channelsForSchool } from '../../lib/portal/types';
 
@@ -81,6 +82,7 @@ const navItems = [
                 <a
                   href={item.href}
                   class="portal-nav-item"
+                  data-tour={`nav-${item.key === 'tracker' ? 'applications' : item.key}`}
                   aria-current={active === item.key ? 'page' : undefined}
                 >
                   <svg
@@ -189,6 +191,9 @@ const navItems = [
         </div>
 
         <slot />
+
+        {/* Guided tour. Renders nothing once finished or skipped. */}
+        <TourOverlay client:only="react" page={active} base={base} />
       </div>
     </div>
 

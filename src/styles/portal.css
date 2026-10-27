@@ -644,3 +644,123 @@
   .trk-side { order: 2; }
   .trk-detail { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ------------------------------------------------------------
+   Guided tour (first visit)
+   ------------------------------------------------------------ */
+
+.portal-tour {
+  /* Fixed, so the spotlight's coordinates are the viewport's and do not
+     depend on which pane the overlay happens to be mounted inside. */
+  position: fixed;
+  inset: 0;
+  z-index: 70; /* over the rail and topbar, under nothing else */
+}
+
+/* The dim is this element's shadow, so the lit area is the element itself.
+   One rect means moving between targets is a single smooth transition. */
+.portal-tour-spot {
+  position: absolute;
+  border-radius: theme(borderRadius.card);
+  box-shadow:
+    0 0 0 9999px rgb(8 12 10 / 0.68),
+    0 0 0 2px var(--school-accent);
+  transition:
+    top 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    left 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.portal-tour-card {
+  position: absolute;
+  width: min(320px, calc(100vw - 32px));
+  padding: 16px 18px 14px;
+  border-radius: theme(borderRadius.card);
+  border: 1px solid theme(colors.line.strong);
+  /* Lifted above the surface colour on purpose: the dim behind it lands
+     very close to plain `surface`, so a card using that reads as
+     transparent even though it is not. */
+  background: color-mix(in srgb, theme(colors.surface) 84%, #ffffff);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 0.5);
+  animation: tourCardIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition:
+    top 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    left 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.portal-tour-card:focus {
+  outline: none;
+}
+
+@keyframes tourCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+}
+
+.portal-tour-count {
+  margin: 0 0 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--school-deep);
+}
+
+.portal-tour-title {
+  margin: 0 0 5px;
+  font-family: theme(fontFamily.display);
+  font-size: 1.04rem;
+  font-weight: 600;
+  color: theme(colors.ink.DEFAULT);
+}
+
+.portal-tour-body {
+  margin: 0 0 14px;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: theme(colors.ink.soft);
+}
+
+.portal-tour-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.portal-tour-skip {
+  font-size: 0.8rem;
+  color: theme(colors.ink.soft);
+  transition: color 0.15s;
+}
+.portal-tour-skip:hover {
+  color: theme(colors.ink.DEFAULT);
+}
+
+.portal-tour-next {
+  border-radius: 999px;
+  padding: 7px 18px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: var(--school-deep);
+  color: #fff;
+  transition: opacity 0.15s;
+}
+.portal-tour-next:hover {
+  opacity: 0.88;
+}
+
+/* Someone who asked for less motion still gets the tour, just without the
+   travelling spotlight: it cuts between targets instead. */
+@media (prefers-reduced-motion: reduce) {
+  .portal-tour-spot,
+  .portal-tour-card {
+    transition: none;
+  }
+  .portal-tour-card {
+    animation: none;
+  }
+}

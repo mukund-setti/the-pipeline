@@ -8,6 +8,7 @@ import {
   type Candidate,
 } from '../../lib/jobs/sources';
 import { isTopPick, normCompany } from '../../lib/jobs/tiers';
+import { deriveTags } from '../../lib/portal/recommend';
 
 /**
  * Opportunity scanner: the engine behind the portal's "AI-tracked" surface.
@@ -269,6 +270,123 @@ function dedupe(all: Candidate[]): Candidate[] {
   return kept;
 }
 
+/* --------------------------- tag enrichment ----------------------------- */
+
+/**
+ * Board rows arrive with structural tags (pay flags, board, top-pick) but no
+ * skill tags, so a feed of "Software Engineer Intern" rows looks identical to
+ * the "For you" recommender (src/lib/portal/recommend.ts), which matches a
+ * member's resume against a row's tags and title. Two passes fill them in:
+ *
+ *   1. Deterministic: run the recommender's own lexicon over the title and
+ *      location. Free, instant, and it catches specific titles
+ *      ("Machine Learning Intern" -> ai-ml).
+ *   2. Company domains, via one batched Claude call. This is the pass that
+ *      adds information the row does not already contain: Capital One is a
+ *      bank, NVIDIA builds hardware. Titles cannot say that.
+ *
+ * Deliberately NOT done: asking a model to invent skill tags for a bare
+ * "Software Engineer Intern". Tags render as the "Why:" chips a member reads
+ * as fact, so a row with nothing to say keeps saying nothing.
+ */
+
+/** Closed vocabulary for pass 2. Every entry is a concept the ranker knows. */
+const DOMAIN_TAGS = [
+  'ai-ml', 'data', 'hardware', 'embedded', 'systems', 'cloud',
+  'security', 'mobile', 'fintech', 'frontend', 'backend', 'research',
+] as const;
+
+/** Companies classified per run, in one call. */
+const MAX_COMPANIES = 120;
+/** Pre-existing untagged rows repaired per run. */
+const BACKFILL_LIMIT = 500;
+
+const COMPANY_SCHEMA = {
+  type: 'object',
+  properties: {
+    companies: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          tags: { type: 'array', items: { type: 'string', enum: DOMAIN_TAGS } },
+        },
+        required: ['name', 'tags'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['companies'],
+  additionalProperties: false,
+} as const;
+
+/**
+ * Ask Claude what each company works on. Returns an empty map when the key is
+ * missing or the call fails: enrichment is an improvement, never a dependency,
+ * and the scan must still complete without it.
+ */
+async function classifyCompanies(names: string[]): Promise<Map<string, string[]>> {
+  const out = new Map<string, string[]>();
+  if (!ANTHROPIC_API_KEY || names.length === 0) return out;
+
+  const list = names.slice(0, MAX_COMPANIES);
+  const PROMPT = [
+    'Classify each company by the technical domains it is known for.',
+    'Rules:',
+    `- Use ONLY these tags: ${DOMAIN_TAGS.join(', ')}.`,
+    '- At most 3 tags per company, fewest that are clearly true.',
+    '- Return an empty tags array when you do not recognise the company or it has no clear domain. Do not guess.',
+    '- Tag what the company builds, not what a job there might involve.',
+    '- Echo each name back exactly as given.',
+    '',
+    'Companies:',
+    ...list.map((n) => `- ${n}`),
+  ].join('\n');
+
+  try {
+    const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+    const res = await client.beta.messages.create({
+      model: 'claude-opus-5',
+      max_tokens: 4000,
+      betas: ['server-side-fallback-2026-07-01'],
+      fallbacks: 'default',
+      output_config: { effort: 'low', format: { type: 'json_schema', schema: COMPANY_SCHEMA } },
+      messages: [{ role: 'user', content: PROMPT }],
+    } as any);
+    if ((res as any).stop_reason === 'refusal') return out;
+    const textBlock = (res as any).content?.find((b: any) => b.type === 'text');
+    if (!textBlock?.text) return out;
+    const rows: any[] = JSON.parse(textBlock.text)?.companies ?? [];
+    // Company names come from scraped pages, so validate the echo rather than
+    // trusting it: only names we asked about, only tags in the vocabulary.
+    const asked = new Map(list.map((n) => [n.toLowerCase(), n]));
+    for (const r of rows) {
+      const name = asked.get(String(r?.name ?? '').toLowerCase());
+      if (!name || !Array.isArray(r.tags)) continue;
+      const tags = r.tags.filter((t: any) => (DOMAIN_TAGS as readonly string[]).includes(t));
+      if (tags.length) out.set(name, tags.slice(0, 3));
+    }
+  } catch {
+    // Model unavailable or malformed output: rows keep their text-derived tags.
+  }
+  return out;
+}
+
+/** Add skill tags to a batch of rows, keeping whatever the source supplied. */
+async function enrichTags(rows: { title: string; company: string; location: string | null; tags: string[] }[]) {
+  const companies = [...new Set(rows.map((r) => r.company))].filter(Boolean);
+  const domains = await classifyCompanies(companies);
+  for (const r of rows) {
+    const merged = new Set([
+      ...r.tags,
+      ...deriveTags(r.title, r.location),
+      ...(domains.get(r.company) ?? []),
+    ]);
+    r.tags = [...merged].slice(0, 8);
+  }
+}
+
 /* ------------------------------ the handler ----------------------------- */
 
 const handler: APIRoute = async ({ request }) => {
@@ -309,6 +427,7 @@ const handler: APIRoute = async ({ request }) => {
   const candidates = dedupe(all);
 
   let inserted = 0;
+  let backfilled = 0;
   let freshRows: Candidate[] = [];
   try {
     const supa = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
@@ -336,6 +455,16 @@ const handler: APIRoute = async ({ request }) => {
       .filter((c) => !knownUrls.has(c.url) && !knownKeys.has(postingKey(c)))
       .slice(0, MAX_INSERTS);
 
+    // Skill-tag the rows about to be inserted, so the company call scales with
+    // new postings rather than the whole board.
+    if (fresh.length > 0) {
+      try {
+        await enrichTags(fresh);
+      } catch (e: any) {
+        errors.push(`tags: ${e?.message ?? 'failed'}`);
+      }
+    }
+
     // ignoreDuplicates turns a URL race into a skip instead of a failed batch;
     // the returned rows are exactly the ones that landed.
     const landed = new Set<string>();
@@ -362,6 +491,38 @@ const handler: APIRoute = async ({ request }) => {
     }
     freshRows = fresh.filter((c) => landed.has(c.url));
     inserted = freshRows.length;
+
+    // Backfill: rows stored before skill tagging existed carry no concepts and
+    // are invisible to "For you". Repair a bounded slice per run (tags only,
+    // never posted_at, so the "New" chip stays honest) until the table catches
+    // up. Best-effort; a failure here never fails the scan.
+    try {
+      const { data: stale } = await supa
+        .from('opportunities')
+        .select('id, title, company, location, tags')
+        .or('tags.is.null,tags.eq.{}')
+        .limit(BACKFILL_LIMIT);
+      const rows = (stale ?? []) as any[];
+      if (rows.length) {
+        const batch = rows.map((r) => ({
+          title: r.title as string,
+          company: r.company as string,
+          location: (r.location ?? null) as string | null,
+          tags: [] as string[],
+        }));
+        await enrichTags(batch);
+        for (let i = 0; i < rows.length; i++) {
+          if (batch[i].tags.length === 0) continue;
+          const { error } = await supa
+            .from('opportunities')
+            .update({ tags: batch[i].tags })
+            .eq('id', rows[i].id);
+          if (!error) backfilled++;
+        }
+      }
+    } catch (e: any) {
+      errors.push(`backfill: ${e?.message ?? 'failed'}`);
+    }
   } catch (e: any) {
     errors.push(`db: ${e?.message ?? 'failed'}`);
   }
@@ -387,6 +548,7 @@ const handler: APIRoute = async ({ request }) => {
     ok: true,
     scanned,
     inserted,
+    backfilled,
     skipped: candidates.length - inserted,
     notified,
     errors,

@@ -94,6 +94,10 @@ export default function ResumeCard({ school }: { school: string }) {
       const info = await store.uploadResume(file);
       setResume(info);
       setConfirmRemove(false);
+      // Other islands on this page (the first-run checklist) track whether a
+      // resume is on file; they are separate React roots, so a plain event is
+      // how they hear about it.
+      window.dispatchEvent(new CustomEvent('portal:resume-changed'));
     } catch (err) {
       setError((err as { message?: string })?.message || 'Upload did not go through. Try again.');
     } finally {
@@ -107,6 +111,7 @@ export default function ResumeCard({ school }: { school: string }) {
     try {
       await store.removeResume();
       setResume(null);
+      window.dispatchEvent(new CustomEvent('portal:resume-changed'));
     } catch (err) {
       setError((err as { message?: string })?.message || 'Could not remove it. Try again.');
     } finally {
