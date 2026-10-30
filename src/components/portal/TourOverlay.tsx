@@ -18,6 +18,7 @@ import {
   stepOnPage,
   TOUR_DONE_KEY,
   TOUR_STEP_KEY,
+  TOUR_STEPS,
   type TourPage,
   type TourStep,
 } from '../../lib/portal/tour';
@@ -52,6 +53,8 @@ export default function TourOverlay({ page, base }: { page: string; base: string
   const [index, setIndex] = useState<number | null>(null);
   const [step, setStep] = useState<TourStep | null>(null);
   const [rect, setRect] = useState<Rect | null>(null);
+  /** Held true while the exit animation plays, before unmounting. */
+  const [closing, setClosing] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
 
   // Pick up the stored step. Nothing renders unless it belongs to this page.
@@ -123,9 +126,23 @@ export default function TourOverlay({ page, base }: { page: string; base: string
 
   function finish() {
     write(TOUR_DONE_KEY, '1');
-    setStep(null);
-    setIndex(null);
-    window.dispatchEvent(new CustomEvent('portal:tour-ended'));
+    const end = () => {
+      setStep(null);
+      setIndex(null);
+      setClosing(false);
+      window.dispatchEvent(new CustomEvent('portal:tour-ended'));
+    };
+    // Someone who asked for less motion gets the end immediately rather than
+    // sitting through a fade they did not want.
+    const reduced =
+      typeof matchMedia === 'function' &&
+      matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) {
+      end();
+      return;
+    }
+    setClosing(true);
+    window.setTimeout(end, 220);
   }
 
   function advance() {
@@ -167,10 +184,22 @@ export default function TourOverlay({ page, base }: { page: string; base: string
   const cardLeft = Math.max(MARGIN, Math.min(rect.left, window.innerWidth - 320 - MARGIN));
 
   return (
-    <div className="portal-tour" role="dialog" aria-modal="true" aria-label="Portal tour">
+    <div
+      className={'portal-tour' + (closing ? ' portal-tour--out' : '')}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Portal tour"
+    >
       {/* The dim: a transparent rect whose shadow covers everything else. */}
       <div
         className="portal-tour-spot"
+        style={{ top: rect.top, left: rect.left, width: rect.width, height: rect.height }}
+      />
+      {/* A second ring on the same rect, breathing, to pull the eye to the
+          target. Purely decorative, so it never takes pointer events. */}
+      <div
+        className="portal-tour-pulse"
+        aria-hidden="true"
         style={{ top: rect.top, left: rect.left, width: rect.width, height: rect.height }}
       />
       <div
@@ -179,11 +208,28 @@ export default function TourOverlay({ page, base }: { page: string; base: string
         className="portal-tour-card"
         style={{ top: cardTop, left: cardLeft }}
       >
-        <p className="portal-tour-count">
-          Step {index + 1} of 4
-        </p>
-        <h3 className="portal-tour-title">{step.title}</h3>
-        <p className="portal-tour-body">{step.body}</p>
+        <div className="portal-tour-progress">
+          <span className="sr-only">
+            Step {index + 1} of {TOUR_STEPS.length}
+          </span>
+          {TOUR_STEPS.map((s, i) => (
+            <span
+              key={s.key}
+              aria-hidden="true"
+              className={
+                'portal-tour-dot' +
+                (i === index ? ' is-current' : '') +
+                (i < index ? ' is-done' : '')
+              }
+            />
+          ))}
+        </div>
+        {/* Keyed on the step so the text animates in on each change instead
+            of swapping while the card is still sliding. */}
+        <div key={step.key} className="portal-tour-content">
+          <h3 className="portal-tour-title">{step.title}</h3>
+          <p className="portal-tour-body">{step.body}</p>
+        </div>
         <div className="portal-tour-actions">
           <button type="button" className="portal-tour-skip" onClick={finish}>
             Skip

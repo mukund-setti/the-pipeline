@@ -654,6 +654,7 @@
      depend on which pane the overlay happens to be mounted inside. */
   position: fixed;
   inset: 0;
+  animation: tourIn 0.3s ease both;
   z-index: 70; /* over the rail and topbar, under nothing else */
 }
 
@@ -675,7 +676,11 @@
 
 .portal-tour-card {
   position: absolute;
-  width: min(320px, calc(100vw - 32px));
+  /* Sized against the overlay, which already spans the viewport, rather
+     than vw: percentage of a known parent is steadier than a viewport unit
+     and cannot collapse if vw resolves oddly. */
+  width: 320px;
+  max-width: calc(100% - 32px);
   padding: 16px 18px 14px;
   border-radius: theme(borderRadius.card);
   border: 1px solid theme(colors.line.strong);
@@ -693,11 +698,93 @@
   outline: none;
 }
 
+.portal-tour--out {
+  animation: tourOut 0.22s ease both;
+  pointer-events: none;
+}
+
+@keyframes tourIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes tourOut {
+  to {
+    opacity: 0;
+  }
+}
+
 @keyframes tourCardIn {
   from {
     opacity: 0;
     transform: translateY(6px) scale(0.985);
   }
+}
+
+/* Breathing ring on the target. Sits on the same rect as the spotlight and
+   travels with it, so the eye follows the move rather than hunting for
+   where the highlight went. */
+.portal-tour-pulse {
+  position: absolute;
+  border-radius: theme(borderRadius.card);
+  pointer-events: none;
+  animation: tourPulse 2.1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  transition:
+    top 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    left 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes tourPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--school-accent) 55%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--school-accent) 0%, transparent);
+  }
+}
+
+/* Each step's text animates in on its own, so it does not change while the
+   card is still travelling to the next target. */
+.portal-tour-content {
+  animation: tourTextIn 0.3s 0.08s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes tourTextIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* Progress dots: the current one widens into a bar, done ones stay filled. */
+.portal-tour-progress {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.portal-tour-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: theme(colors.line.strong);
+  transition:
+    width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.34s ease;
+}
+
+.portal-tour-dot.is-done {
+  background: color-mix(in srgb, var(--school-accent) 70%, transparent);
+}
+
+.portal-tour-dot.is-current {
+  width: 20px;
+  background: var(--school-accent);
 }
 
 .portal-tour-count {
@@ -757,10 +844,20 @@
    travelling spotlight: it cuts between targets instead. */
 @media (prefers-reduced-motion: reduce) {
   .portal-tour-spot,
-  .portal-tour-card {
+  .portal-tour-pulse,
+  .portal-tour-card,
+  .portal-tour-dot {
     transition: none;
   }
-  .portal-tour-card {
+  .portal-tour,
+  .portal-tour-card,
+  .portal-tour-content {
     animation: none;
+  }
+  /* The breathing ring is the one piece with no quiet version: a static
+     ring still marks the target, so drop the motion and keep the mark. */
+  .portal-tour-pulse {
+    animation: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--school-accent) 45%, transparent);
   }
 }
