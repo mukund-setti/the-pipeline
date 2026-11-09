@@ -1,13 +1,14 @@
 ---
 /**
  * Portal home: the chapter's landing pane. A static welcome band, the resume
- * drop island, quick links into the portal surfaces, and a placeholder for
- * the weekly schedule (coming soon). The member's first name is filled in
+ * drop island, quick links into the portal surfaces, and the chapter
+ * calendar (src/data/events.ts). The member's first name is filled in
  * by a tiny script once the shell's auth guard resolves.
  */
 import PortalShell from '../../../components/portal/PortalShell.astro';
 import ResumeCard from '../../../components/portal/ResumeCard';
 import FirstRunCard from '../../../components/portal/FirstRunCard';
+import EventCalendar from '../../../components/portal/EventCalendar.astro';
 import { PORTAL_SCHOOLS, schoolBySlug } from '../../../lib/schools';
 
 export function getStaticPaths() {
@@ -129,17 +130,8 @@ const quickNav = [
       }
     </div>
 
-    {/* ── This week ────────────────────────────────────────── */}
-    <section class="portal-card mt-6 p-6 md:p-7">
-      <div class="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 class="font-display text-h3-lg font-semibold text-ink">This week in the pipeline</h3>
-        <span class="portal-chip portal-chip--gold">Coming soon</span>
-      </div>
-      <p class="mt-3 max-w-[56ch] text-[0.92rem] leading-relaxed text-ink-soft">
-        Office hours, resume reviews and mock interviews will show up here once the schedule is set. Until
-        then, keep an eye on the Discord for announcements.
-      </p>
-    </section>
+    {/* ── Calendar ─────────────────────────────────────────── */}
+    <EventCalendar school={school.slug} schoolName={school.name} />
 
     {/* ── Footer row ───────────────────────────────────────── */}
     <div

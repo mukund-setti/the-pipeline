@@ -1,0 +1,322 @@
+---
+/**
+ * Portal home calendar: a month grid with meeting days marked, next to the
+ * list of meetings. Events come from src/data/events.ts.
+ *
+ * The page is built once, so "upcoming" vs "past" is decided in the browser
+ * from today's Pacific date: the script below moves past meetings into the
+ * collapsed "Past meetings" list, tags the next one "Up next", rings today
+ * in the grid, and opens the grid on the month of the next meeting. Without
+ * the script every meeting simply shows in date order.
+ */
+import { eventsForSchool, type ChapterEvent } from '../../data/events';
+
+interface Props {
+  school: string;
+  schoolName: string;
+}
+const { school, schoolName } = Astro.props;
+const events = eventsForSchool(school);
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function parts(date: string) {
+  const [y, m, d] = date.split('-').map(Number);
+  // Noon UTC keeps the weekday right whatever the build machine's zone is.
+  const weekday = new Date(Date.UTC(y, m - 1, d, 12)).getUTCDay();
+  return { y, m, d, weekday };
+}
+
+function longDate(date: string) {
+  const { m, d, weekday } = parts(date);
+  return `${WEEKDAYS[weekday]}, ${MONTHS[m - 1].slice(0, 3)} ${d}`;
+}
+
+// One grid per month that has a meeting.
+const monthKeys = [...new Set(events.map((e) => e.date.slice(0, 7)))];
+const months = monthKeys.map((key) => {
+  const [y, m] = key.split('-').map(Number);
+  const lead = new Date(Date.UTC(y, m - 1, 1, 12)).getUTCDay();
+  const days = new Date(Date.UTC(y, m, 0, 12)).getUTCDate();
+  const byDay = new Map<number, ChapterEvent[]>();
+  for (const e of events) {
+    if (e.date.slice(0, 7) !== key) continue;
+    const d = parts(e.date).d;
+    byDay.set(d, [...(byDay.get(d) ?? []), e]);
+  }
+  return { key, label: `${MONTHS[m - 1]} ${y}`, lead, days, byDay };
+});
+
+const pad = (n: number) => String(n).padStart(2, '0');
+---
+
+<section class="portal-card mt-6 p-6 md:p-7" data-calendar>
+  <div class="flex flex-wrap items-baseline justify-between gap-2">
+    <div>
+      <h3 class="font-display text-h3-lg font-semibold text-ink">Calendar</h3>
+      <p class="mt-1 text-[0.86rem] text-ink-soft">{schoolName} general meetings and events</p>
+    </div>
+  </div>
+
+  {
+    events.length === 0 ? (
+      <p class="mt-4 max-w-[56ch] text-[0.92rem] leading-relaxed text-ink-soft">
+        Office hours, resume reviews and mock interviews will show up here once the schedule is set. Until then,
+        keep an eye on the Discord for announcements.
+      </p>
+    ) : (
+      <div class="mt-5 grid gap-6 md:grid-cols-[260px_minmax(0,1fr)] md:gap-8">
+        {/* ── Month grid ── */}
+        <div class="self-start rounded-field border border-line bg-bg/40 p-4">
+          {months.map((mo, i) => (
+            <div data-month={mo.key} hidden={i !== 0}>
+              <div class="flex items-center justify-between">
+                <button type="button" class="cal-nav" data-month-step="-1" aria-label="Previous month">
+                  &lsaquo;
+                </button>
+                <span class="text-[0.9rem] font-semibold text-ink">{mo.label}</span>
+                <button type="button" class="cal-nav" data-month-step="1" aria-label="Next month">
+                  &rsaquo;
+                </button>
+              </div>
+              <div class="mt-3 grid grid-cols-7 gap-y-1 text-center" role="grid" aria-label={mo.label}>
+                {WEEKDAYS.map((w) => (
+                  <span class="pb-1 text-[0.66rem] font-semibold uppercase tracking-wider text-ink-soft" aria-hidden="true">
+                    {w.slice(0, 2)}
+                  </span>
+                ))}
+                {Array.from({ length: mo.lead }, () => (
+                  <span />
+                ))}
+                {Array.from({ length: mo.days }, (_, k) => {
+                  const day = k + 1;
+                  const date = `${mo.key}-${pad(day)}`;
+                  const evs = mo.byDay.get(day);
+                  return evs ? (
+                    <a
+                      href={`#event-${evs[0].id}`}
+                      class="cal-day cal-day--event"
+                      data-day={date}
+                      title={evs.map((e) => e.title).join(', ')}
+                    >
+                      {day}
+                    </a>
+                  ) : (
+                    <span class="cal-day" data-day={date}>
+                      {day}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          <div class="mt-4 flex flex-wrap gap-x-4 gap-y-1 border-t border-line pt-3 text-[0.72rem] text-ink-soft">
+            <span class="inline-flex items-center gap-1.5">
+              <span class="h-2 w-2 rounded-full bg-gold" aria-hidden="true" /> Meeting
+            </span>
+            <span class="inline-flex items-center gap-1.5">
+              <span class="h-2 w-2 rounded-full border border-ink" aria-hidden="true" /> Today
+            </span>
+          </div>
+        </div>
+
+        {/* ── Meeting list ── */}
+        <div class="min-w-0">
+          <ol class="grid gap-3" data-upcoming>
+            {events.map((e) => {
+              const p = parts(e.date);
+              return (
+                <li
+                  id={`event-${e.id}`}
+                  data-event
+                  data-date={e.date}
+                  class="cal-event flex scroll-mt-24 gap-4 rounded-field border border-line p-4"
+                >
+                  <div class="flex w-14 flex-none flex-col items-center rounded-[10px] bg-brand-soft py-2 text-center">
+                    <span class="text-[0.66rem] font-semibold uppercase tracking-wider text-gold-deep">
+                      {MONTHS[p.m - 1].slice(0, 3)}
+                    </span>
+                    <span class="font-display text-[1.5rem] font-semibold leading-none text-ink">{p.d}</span>
+                    <span class="mt-0.5 text-[0.66rem] text-ink-soft">{WEEKDAYS[p.weekday]}</span>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="portal-chip portal-chip--gold" data-event-chip hidden />
+                      {e.tentative && <span class="portal-chip cal-chip-muted">Date to be confirmed</span>}
+                      {e.format && <span class="text-[0.76rem] text-ink-soft">{e.format}</span>}
+                    </div>
+                    <h4 class="mt-1.5 font-display text-[1.08rem] font-semibold leading-snug text-ink">{e.title}</h4>
+                    <p class="mt-1 text-[0.8rem] text-ink-soft">
+                      {longDate(e.date)}
+                      <span aria-hidden="true"> · </span>
+                      {e.time ?? 'Time to be announced'}
+                      <span aria-hidden="true"> · </span>
+                      {e.location ?? 'Room to be announced'}
+                    </p>
+                    <p class="mt-2.5 text-[0.88rem] leading-relaxed text-ink-soft">{e.description}</p>
+                    {e.speakers.length > 0 && (
+                      <p class="mt-2 text-[0.82rem] text-ink-soft">
+                        <span class="font-semibold text-ink">Speakers: </span>
+                        {e.speakers.join(', ')}
+                      </p>
+                    )}
+                    {e.note && (
+                      <p class="mt-2 text-[0.82rem] font-semibold text-gold-deep">{e.note}</p>
+                    )}
+                    {e.rsvpUrl && (
+                      <a
+                        href={e.rsvpUrl}
+                        target="_blank"
+                        rel="noopener"
+                        class="mt-3 inline-flex items-center gap-1.5 rounded-pill bg-gold-bright px-4 py-1.5 text-[0.8rem] font-semibold text-bg transition-colors hover:bg-gold-pale"
+                        data-rsvp
+                      >
+                        RSVP <span aria-hidden="true">&rarr;</span>
+                      </a>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+          <p class="text-[0.88rem] text-ink-soft" data-none-upcoming hidden>
+            No meetings on the calendar right now. The next one will show up here, and on the Discord.
+          </p>
+
+          <details class="cal-past mt-4" data-past-wrap hidden>
+            <summary class="cursor-pointer text-[0.84rem] font-semibold text-ink">
+              Past meetings <span class="font-normal text-ink-soft" data-past-count />
+            </summary>
+            <ol class="mt-3 grid gap-3" data-past />
+          </details>
+        </div>
+      </div>
+    )
+  }
+</section>
+
+<style>
+  /* Classes like portal-chip set display, which would beat the hidden attribute. */
+  [hidden] {
+    display: none !important;
+  }
+  .cal-nav {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    line-height: 1;
+    color: theme(colors.ink.soft);
+  }
+  .cal-nav:hover {
+    background: theme(colors.brand.soft);
+    color: theme(colors.ink.DEFAULT);
+  }
+  .cal-nav[disabled] {
+    visibility: hidden;
+  }
+  .cal-day {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    margin: 0 auto;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    color: theme(colors.ink.soft);
+  }
+  .cal-day--event {
+    background: theme(colors.gold.DEFAULT);
+    color: theme(colors.bg);
+    font-weight: 700;
+  }
+  .cal-day--event:hover {
+    background: theme(colors.gold.pale);
+  }
+  .cal-day--event[data-state='past'] {
+    background: theme(colors.brand.soft);
+    color: theme(colors.ink.soft);
+  }
+  .cal-day[data-today] {
+    box-shadow: inset 0 0 0 1.5px theme(colors.ink.DEFAULT);
+  }
+  .cal-event[data-state='past'] {
+    opacity: 0.78;
+  }
+  .cal-event:target {
+    border-color: theme(colors.gold.DEFAULT);
+  }
+  .cal-chip-muted {
+    white-space: nowrap;
+    background: transparent;
+    color: theme(colors.ink.soft);
+    box-shadow: inset 0 0 0 1px theme(colors.line.strong);
+  }
+</style>
+
+<script>
+  function setup(root: HTMLElement) {
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date());
+
+    // Sort meetings into upcoming and past.
+    const upcoming = root.querySelector<HTMLElement>('[data-upcoming]');
+    const past = root.querySelector<HTMLElement>('[data-past]');
+    if (!upcoming || !past) return;
+    const items = [...root.querySelectorAll<HTMLElement>('[data-event]')];
+    const pastItems = items.filter((li) => (li.dataset.date ?? '') < today);
+    const nextItems = items.filter((li) => (li.dataset.date ?? '') >= today);
+
+    // Most recent past meeting first.
+    for (const li of [...pastItems].reverse()) {
+      li.dataset.state = 'past';
+      li.querySelector('[data-rsvp]')?.remove();
+      past.append(li);
+    }
+    nextItems.forEach((li, i) => {
+      const chip = li.querySelector<HTMLElement>('[data-event-chip]');
+      if (chip && i === 0) {
+        chip.textContent = li.dataset.date === today ? 'Today' : 'Up next';
+        chip.hidden = false;
+      }
+    });
+
+    root.querySelector<HTMLElement>('[data-none-upcoming]')!.hidden = nextItems.length > 0;
+    const wrap = root.querySelector<HTMLElement>('[data-past-wrap]')!;
+    wrap.hidden = pastItems.length === 0;
+    const count = root.querySelector<HTMLElement>('[data-past-count]');
+    if (count) count.textContent = `(${pastItems.length})`;
+
+    // Grid: grey out past meeting days, ring today.
+    for (const cell of root.querySelectorAll<HTMLElement>('[data-day]')) {
+      const day = cell.dataset.day ?? '';
+      if (day === today) cell.dataset.today = '';
+      if (day < today) cell.dataset.state = 'past';
+    }
+
+    // Open on the month of the next meeting (else the latest), and wire the arrows.
+    const months = [...root.querySelectorAll<HTMLElement>('[data-month]')];
+    if (months.length === 0) return;
+    const target = nextItems[0]?.dataset.date?.slice(0, 7);
+    let idx = Math.max(0, target ? months.findIndex((m) => m.dataset.month === target) : months.length - 1);
+    const show = () => {
+      months.forEach((m, i) => {
+        m.hidden = i !== idx;
+        const [prev, next] = m.querySelectorAll<HTMLButtonElement>('[data-month-step]');
+        prev.disabled = i === 0;
+        next.disabled = i === months.length - 1;
+      });
+    };
+    root.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-month-step]');
+      if (!btn) return;
+      idx = Math.min(months.length - 1, Math.max(0, idx + Number(btn.dataset.monthStep)));
+      show();
+    });
+    show();
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-calendar]').forEach(setup);
+</script>
