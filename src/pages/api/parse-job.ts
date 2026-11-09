@@ -1,5 +1,7 @@
 import type { APIRoute } from 'astro';
 import { createClient } from '@supabase/supabase-js';
+import { lookup } from 'node:dns/promises';
+import { consumeQuota } from '../../lib/quota';
 import { schoolForEmail } from '../../lib/schools';
 // @ts-ignore: plain JS port of the JobTracker parser (see the file header)
 import { parseJobUrl } from '../../lib/jobs/parse.js';
@@ -43,6 +45,37 @@ function isPublicHost(hostname: string): boolean {
   return true;
 }
 
+/** True for loopback, private, link-local, CGNAT and other non-public IPs. */
+function isPrivateIp(ip: string): boolean {
+  const v4 = ip.startsWith('::ffff:') ? ip.slice(7) : ip;
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(v4)) {
+    const [a, b] = v4.split('.').map(Number);
+    return (
+      a === 0 || a === 10 || a === 127 ||
+      (a === 100 && b >= 64 && b <= 127) ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      a >= 224
+    );
+  }
+  const h = ip.toLowerCase();
+  return h === '::' || h === '::1' || /^f[cd]/.test(h) || /^fe[89ab]/.test(h);
+}
+
+/**
+ * Resolve the hostname and refuse it if any address is non-public, so a
+ * public-looking name that points at an internal address is still blocked.
+ */
+async function resolvesPublic(hostname: string): Promise<boolean> {
+  try {
+    const addrs = await lookup(hostname, { all: true });
+    return addrs.length > 0 && !addrs.some((a) => isPrivateIp(a.address));
+  } catch {
+    return false;
+  }
+}
+
 export const POST: APIRoute = async ({ request }) => {
   // ---- auth: verified token + portal membership ------------------------
   // Local dev skips the check so the dev-only demo session can read links.
@@ -54,7 +87,17 @@ export const POST: APIRoute = async ({ request }) => {
     const supa = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false } });
     const { data, error } = await supa.auth.getUser(token);
     const email = data?.user?.email;
-    if (error || !email || !schoolForEmail(email)) return json({ error: 'unauthorized' }, 401);
+    // Confirmed addresses only, same as /api/opportunities-search.
+    if (error || !email || !data.user?.email_confirmed_at || !schoolForEmail(email)) {
+      return json({ error: 'unauthorized' }, 401);
+    }
+
+    // Daily per-member cap. No money at stake here, so if the check itself
+    // cannot run the read goes ahead rather than breaking the tracker.
+    const quota = await consumeQuota(SUPABASE_URL, ANON_KEY, token, 'parse_job');
+    if (quota === 'over') {
+      return json({ error: "you have read a lot of links today. Fill this one in by hand, or try again tomorrow" }, 429);
+    }
   }
 
   // ---- input: {"url": "https://..."} -----------------------------------
@@ -70,6 +113,9 @@ export const POST: APIRoute = async ({ request }) => {
     if (!/^https?:$/.test(u.protocol) || !isPublicHost(u.hostname)) throw new Error();
     if (u.href.length > 2000) throw new Error();
   } catch {
+    return json({ error: 'That does not look like a web link' }, 400);
+  }
+  if (!(await resolvesPublic(u.hostname))) {
     return json({ error: 'That does not look like a web link' }, 400);
   }
 

@@ -85,7 +85,10 @@ export const POST: APIRoute = async ({ request }) => {
   });
   const { data, error } = await supa.auth.getUser(token);
   const email = data?.user?.email;
-  if (error || !email || !schoolForEmail(email)) {
+  // A confirmed address only: if Supabase ever has "Confirm email" off,
+  // anyone could mint unverified @school accounts and each would get its
+  // own daily AI quota.
+  if (error || !email || !data.user?.email_confirmed_at || !schoolForEmail(email)) {
     return json({ error: 'unauthorized' }, 401);
   }
 
