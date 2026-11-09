@@ -22,17 +22,16 @@ import '../../styles/portal.css';
 import Mark from '../ui/Mark.astro';
 import TourOverlay from './TourOverlay';
 import type { PortalSchool } from '../../lib/schools';
-import { channelsForSchool } from '../../lib/portal/types';
+import { hasCalendar } from '../../data/events';
 
 interface Props {
   school: PortalSchool;
-  /** 'home' | 'opportunities' | 'tracker' | 'forum' | 'chat' */
+  /** 'home' | 'opportunities' | 'tracker' | 'forum' | 'calendar' | 'chat' */
   active: string;
   title: string;
 }
 
 const { school, active, title } = Astro.props;
-const channels = channelsForSchool(school.slug);
 const base = `/portal/${school.slug}`;
 
 const navItems = [
@@ -40,7 +39,10 @@ const navItems = [
   { key: 'opportunities', label: 'Opportunities', href: `${base}/opportunities/`, icon: 'feed' },
   { key: 'tracker', label: 'Applications', href: `${base}/applications/`, icon: 'tracker' },
   { key: 'forum', label: 'Forum', href: `${base}/forum/`, icon: 'forum' },
-] as const;
+  ...(hasCalendar(school.slug)
+    ? [{ key: 'calendar', label: 'Calendar', href: `${base}/calendar/`, icon: 'calendar' }]
+    : []),
+];
 ---
 
 <!doctype html>
@@ -102,6 +104,12 @@ const navItems = [
                         <path d="M7 9h10M7 13h10M7 17h6" />
                       </>
                     )}
+                    {item.icon === 'calendar' && (
+                      <>
+                        <rect x="3" y="5" width="18" height="16" rx="3" />
+                        <path d="M3 10h18M8 3v4M16 3v4" />
+                      </>
+                    )}
                     {item.icon === 'forum' && <path d="M21 12a8 8 0 0 1-8 8H4l2.5-2.7A8 8 0 1 1 21 12z" />}
                     {item.icon === 'tracker' && (
                       <>
@@ -117,28 +125,6 @@ const navItems = [
               ))
             }
           </nav>
-
-          <div class="flex flex-col gap-1">
-            <div class="portal-rail-label mb-1.5 mt-1">Chats</div>
-            {
-              channels.map((ch) => (
-                <a
-                  href={`${base}/chat/?channel=${ch.slug}`}
-                  class="portal-nav-item"
-                  data-channel-link={ch.slug}
-                  aria-current={undefined}
-                >
-                  <span class="portal-hash" aria-hidden="true">#</span>
-                  <span class="truncate">{ch.name}</span>
-                  {ch.scope === 'national' && (
-                    <span class="ml-auto rounded-pill bg-white/10 px-1.5 py-px text-[0.6rem] font-bold uppercase tracking-wider text-ondark-soft">
-                      all
-                    </span>
-                  )}
-                </a>
-              ))
-            }
-          </div>
         </div>
 
         <div class="mt-auto border-t border-line-dark p-4">
@@ -248,14 +234,6 @@ const navItems = [
       document.querySelector('[data-scrim]')?.addEventListener('click', () => {
         shell?.removeAttribute('data-menu-open');
       });
-
-      // Highlight the active chat channel in the rail (chat page only).
-      if (location.pathname.includes('/chat')) {
-        const current = new URLSearchParams(location.search).get('channel') || 'national';
-        document
-          .querySelector(`[data-channel-link="${current}"]`)
-          ?.setAttribute('aria-current', 'page');
-      }
     </script>
   </body>
 </html>

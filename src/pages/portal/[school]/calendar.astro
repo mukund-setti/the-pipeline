@@ -1,0 +1,23 @@
+---
+/**
+ * Calendar page: the chapter's meetings, month grid plus list. Built only
+ * for chapters in CALENDAR_SCHOOLS (src/data/events.ts); the others have no
+ * Calendar tab and this address 404s for them.
+ */
+import PortalShell from '../../../components/portal/PortalShell.astro';
+import EventCalendar from '../../../components/portal/EventCalendar.astro';
+import { PORTAL_SCHOOLS, schoolBySlug } from '../../../lib/schools';
+import { hasCalendar } from '../../../data/events';
+
+export function getStaticPaths() {
+  return PORTAL_SCHOOLS.filter((s) => hasCalendar(s.slug)).map((s) => ({ params: { school: s.slug } }));
+}
+
+const school = schoolBySlug(Astro.params.school as string)!;
+---
+
+<PortalShell school={school} active="calendar" title="Calendar">
+  <div class="mx-auto w-full max-w-[1060px] px-5 pb-8 pt-2 md:px-8">
+    <EventCalendar school={school.slug} schoolName={school.name} />
+  </div>
+</PortalShell>

@@ -1,13 +1,13 @@
 ---
 /**
- * Chapter chat page: one static route per portal school, all rendering the
- * ChatApp island inside the shared shell. The active channel is picked by
- * the ?channel= query param at runtime (see ChatApp), so this single page
- * serves every room in the sidebar.
+ * Chat is archived: members talk on Discord, so the portal rooms came out of
+ * the sidebar. This page stays so old links and bookmarks land somewhere
+ * useful. Messages are still in the database and ChatApp.tsx is kept; to
+ * bring chat back, render <ChatApp client:only="react" school={school.slug} />
+ * here again and restore the Chats list in PortalShell.astro.
  */
 import PortalShell from '../../../components/portal/PortalShell.astro';
 import { PORTAL_SCHOOLS, schoolBySlug } from '../../../lib/schools';
-import ChatApp from '../../../components/portal/ChatApp';
 
 export function getStaticPaths() {
   return PORTAL_SCHOOLS.map((s) => ({ params: { school: s.slug } }));
@@ -15,6 +15,30 @@ export function getStaticPaths() {
 
 const school = schoolBySlug(Astro.params.school as string)!;
 ---
+
 <PortalShell school={school} active="chat" title="Chat">
-  <ChatApp client:only="react" school={school.slug} />
+  <div class="mx-auto w-full max-w-[640px] px-5 py-12 md:px-8">
+    <section class="portal-card p-7 md:p-8">
+      <span class="portal-chip portal-chip--gold">Moved to Discord</span>
+      <h2 class="mt-3 font-display text-h3-lg font-semibold text-ink">Chat happens on Discord now</h2>
+      <p class="mt-3 text-[0.92rem] leading-relaxed text-ink-soft">
+        The community talks in the Pipeline Discord, so the portal chat rooms are archived. For longer questions
+        and writeups that should stick around, use the forum.
+      </p>
+      <div class="mt-5 flex flex-wrap gap-3">
+        <a
+          href="/join/"
+          class="inline-flex items-center gap-1.5 rounded-pill bg-gold-bright px-5 py-2 text-[0.86rem] font-semibold text-bg transition-colors hover:bg-gold-pale"
+        >
+          Go to Discord <span aria-hidden="true">&rarr;</span>
+        </a>
+        <a
+          href={`/portal/${school.slug}/forum/`}
+          class="inline-flex items-center rounded-pill border border-line-strong px-5 py-2 text-[0.86rem] font-semibold text-ink transition-colors hover:bg-brand-soft"
+        >
+          Open the forum
+        </a>
+      </div>
+    </section>
+  </div>
 </PortalShell>

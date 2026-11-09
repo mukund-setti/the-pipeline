@@ -1,0 +1,93 @@
+---
+/**
+ * Portal home: the chapter's next meeting, linking to the Calendar tab.
+ * Every meeting is rendered hidden and the script shows the first one on
+ * or after today's Pacific date (the page is built once, so the server
+ * cannot know which is next). With nothing ahead it says so instead.
+ */
+import { eventsForSchool } from '../../data/events';
+
+interface Props {
+  school: string;
+}
+const { school } = Astro.props;
+const events = eventsForSchool(school);
+const calendarHref = `/portal/${school}/calendar/`;
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+function parts(date: string) {
+  const [y, m, d] = date.split('-').map(Number);
+  return { m, d, weekday: new Date(Date.UTC(y, m - 1, d, 12)).getUTCDay() };
+}
+---
+
+<section class="portal-card mt-6 p-5 sm:p-6 md:p-7" data-next-meeting>
+  <div class="flex flex-wrap items-baseline justify-between gap-2">
+    <h3 class="font-display text-h3-lg font-semibold text-ink">Next meeting</h3>
+    <a href={calendarHref} class="text-[0.82rem] font-semibold text-ink underline-offset-4 hover:underline">
+      Full calendar <span aria-hidden="true">&rarr;</span>
+    </a>
+  </div>
+
+  {
+    events.map((e) => {
+      const p = parts(e.date);
+      return (
+        <a
+          href={`${calendarHref}#event-${e.id}`}
+          class="group mt-4 flex items-center gap-3 rounded-field border border-line p-3 transition-colors sm:gap-4 sm:p-4 hover:border-line-strong"
+          data-date={e.date}
+          hidden
+        >
+          <span class="flex w-12 flex-none flex-col sm:w-14 items-center rounded-[10px] bg-brand-soft py-2 text-center">
+            <span class="text-[0.66rem] font-semibold uppercase tracking-wider text-gold-deep">{MONTHS[p.m - 1]}</span>
+            <span class="font-display text-[1.5rem] font-semibold leading-none text-ink">{p.d}</span>
+            <span class="mt-0.5 text-[0.66rem] text-ink-soft">{WEEKDAYS[p.weekday]}</span>
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block font-display text-[0.98rem] font-semibold sm:text-[1.05rem] leading-snug text-ink">{e.title}</span>
+            <span class="mt-1 block text-[0.8rem] text-ink-soft">
+              <span data-when />
+              {e.time ?? 'Time to be announced'}
+              <span aria-hidden="true"> · </span>
+              {e.location ?? 'Room to be announced'}
+            </span>
+          </span>
+          <span
+            aria-hidden="true"
+            class="hidden text-ink-soft transition-transform duration-200 group-hover:translate-x-0.5 sm:inline"
+          >
+            &rarr;
+          </span>
+        </a>
+      );
+    })
+  }
+  <p class="mt-3 text-[0.92rem] leading-relaxed text-ink-soft" data-none hidden>
+    Nothing scheduled right now. The next meeting will show up here and on the Discord.
+  </p>
+</section>
+
+<style>
+  /* Flex classes on the rows would beat the hidden attribute. */
+  [hidden] {
+    display: none !important;
+  }
+</style>
+
+<script>
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date());
+  document.querySelectorAll<HTMLElement>('[data-next-meeting]').forEach((card) => {
+    const next = [...card.querySelectorAll<HTMLElement>('[data-date]')].find(
+      (row) => (row.dataset.date ?? '') >= today
+    );
+    if (next) {
+      next.hidden = false;
+      const when = next.querySelector('[data-when]');
+      if (when && next.dataset.date === today) when.textContent = 'Today · ';
+    } else {
+      card.querySelector<HTMLElement>('[data-none]')!.hidden = false;
+    }
+  });
+</script>

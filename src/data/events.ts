@@ -59,6 +59,16 @@ export const EVENTS: ChapterEvent[] = [
   },
 ];
 
+/**
+ * Chapters with a Calendar tab. Others keep the coming-soon card on their
+ * home page until they run meetings; add a slug here to turn it on.
+ */
+export const CALENDAR_SCHOOLS: readonly PortalSchoolSlug[] = ['uci'];
+
+export function hasCalendar(school: string): boolean {
+  return (CALENDAR_SCHOOLS as readonly string[]).includes(school);
+}
+
 export function eventsForSchool(school: string): ChapterEvent[] {
   return EVENTS.filter((e) => e.school === school).sort((a, b) => a.date.localeCompare(b.date));
 }
