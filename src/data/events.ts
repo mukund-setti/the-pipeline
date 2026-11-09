@@ -41,7 +41,7 @@ export const EVENTS: ChapterEvent[] = [
     format: 'Speaker panel and Q&A',
     description:
       'Our first GM. Student speakers shared how they landed their internships and what recruiting really looked like, followed by Q&A.',
-    speakers: ['Jasmine Tu', 'Sergio Alcazar', 'Another student speaker'],
+    speakers: ['Jasmine Tu', 'Sergio Alcazar', 'Yutaro Urata'],
   },
   {
     id: 'gm-2',
