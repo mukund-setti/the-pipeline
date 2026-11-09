@@ -131,7 +131,24 @@ const quickNav = [
     </div>
 
     {/* ── Calendar ─────────────────────────────────────────── */}
-    <EventCalendar school={school.slug} schoolName={school.name} />
+    {/* UCI is the only chapter running meetings so far; the others keep the
+        coming-soon card until they have a schedule. */}
+    {
+      school.slug === 'uci' ? (
+        <EventCalendar school={school.slug} schoolName={school.name} />
+      ) : (
+        <section class="portal-card mt-6 p-6 md:p-7">
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <h3 class="font-display text-h3-lg font-semibold text-ink">This week in the pipeline</h3>
+            <span class="portal-chip portal-chip--gold">Coming soon</span>
+          </div>
+          <p class="mt-3 max-w-[56ch] text-[0.92rem] leading-relaxed text-ink-soft">
+            Office hours, resume reviews and mock interviews will show up here once the schedule is set. Until
+            then, keep an eye on the Discord for announcements.
+          </p>
+        </section>
+      )
+    }
 
     {/* ── Footer row ───────────────────────────────────────── */}
     <div
