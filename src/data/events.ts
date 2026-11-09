@@ -36,7 +36,7 @@ export const EVENTS: ChapterEvent[] = [
     school: 'uci',
     title: 'General Meeting #1: Student Speaker Panel',
     date: '2026-11-05',
-    time: '5:20 to 6:00 pm',
+    time: '5:00 to 6:20 pm',
     location: 'DBH 1420',
     format: 'Speaker panel and Q&A',
     description:
@@ -48,7 +48,7 @@ export const EVENTS: ChapterEvent[] = [
     school: 'uci',
     title: 'General Meeting #2: Teach For America Ignite Fellowship',
     date: '2026-11-12',
-    time: '5:20 to 6:00 pm',
+    time: '5:00 to 6:20 pm',
     location: 'DBH 1420',
     format: 'Recruiter talk and alumni Q&A',
     description:
