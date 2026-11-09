@@ -138,6 +138,22 @@
   padding: 0 12px;
 }
 
+/* Rail "Next meeting" card (chapters with a calendar). */
+.portal-rail-meeting {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(243, 248, 238, 0.05);
+  border: 1px solid theme(colors.line.dark);
+  transition: border-color 0.15s ease;
+}
+.portal-rail-meeting:hover {
+  border-color: rgba(243, 248, 238, 0.28);
+}
+.portal-rail-meeting[hidden],
+.portal-rail-meeting [hidden] {
+  display: none;
+}
+
 /* ------------------------------------------------------------
    Content-side helpers shared by portal pages/islands
    ------------------------------------------------------------ */
